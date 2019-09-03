@@ -1,7 +1,7 @@
 from types import ModuleType
 
 from tensorflow.python.framework.ops import EagerTensor
-from syft.frameworks.attributes import FrameworkAttributes
+from syft.generic.frameworks.attributes import FrameworkAttributes
 
 from syft_tensorflow.hook import TensorFlowHook
 

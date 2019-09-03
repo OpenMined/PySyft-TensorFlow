@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 
 import syft
+
 from syft.generic.tensor import initialize_tensor
 
 
@@ -41,11 +42,11 @@ def _detail_tf_tensor(worker, tensor_tuple) -> tf.Tensor:
     Args:
         tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
             the first value is the ID, the second vlaue is the binary for the
-            PyTorch object, the third value is the chain of tensor abstractions,
-            and the fourth object is the chain of gradients (.grad.grad, etc.)
+            TensorFlow object, the third value is the tensor_dtype_enum, and
+            the fourth value is the chain of tensor abstractions
 
     Returns:
-        torch.Tensor: a torch tensor that was serialized
+        tf.Tensor: a deserialized TF tensor
     """
 
     tensor_id, tensor_bin, tensor_dtype_enum, chain = tensor_tuple
