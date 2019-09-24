@@ -6,7 +6,7 @@ from tensorflow.python.framework.ops import EagerTensor
 import syft
 from syft import workers
 from syft.workers.base import BaseWorker
-from syft.generic.frameworks.hook import FrameworkHook
+from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.tensor import initialize_tensor
 
 from syft_tensorflow.tensor import TensorFlowTensor
