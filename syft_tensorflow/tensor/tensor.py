@@ -5,7 +5,7 @@ import tensorflow as tf
 import syft
 from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 class TensorFlowTensor(AbstractTensor):

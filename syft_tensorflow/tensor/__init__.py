@@ -1,0 +1,1 @@
+from syft_tensorflow.tensor.tensor import TensorFlowTensor
