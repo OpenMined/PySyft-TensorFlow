@@ -1,11 +1,11 @@
 import logging
 
 import tensorflow as tf
-from tensorflow.python.framework.ops import EagerTensor
+from tensorflow.python.framework.ops import Tensor
 
 import syft
-from syft import workers
 from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.tensor import initialize_tensor
 
@@ -17,6 +17,7 @@ class TensorFlowHook(FrameworkHook):
         self, tensorflow, local_worker: BaseWorker = None, is_client: bool = True
     ):
         self.tensorflow = tensorflow
+        self.tensorflow.hook = self
         self.framework = self.tensorflow
         syft.tensorflow = tensorflow
         syft.framework = syft.tensorflow
@@ -38,7 +39,7 @@ class TensorFlowHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = workers.VirtualWorker(
+            self.local_worker = VirtualWorker(
                 hook=self, is_client_worker=is_client, id="me"
             )
         else:
@@ -48,7 +49,7 @@ class TensorFlowHook(FrameworkHook):
 
         self.args_hook_for_overloaded_attr = {}
 
-        self._hook_native_tensor(tensorflow.Tensor, TensorFlowTensor)
+        self._hook_native_tensor(Tensor, TensorFlowTensor)
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -80,7 +81,7 @@ class TensorFlowHook(FrameworkHook):
         # self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(tensor_type, syft_type)
+        self._add_methods_from_native_tensor(tensor_type, syft_type)
 
         # TODO Need to add 'get_hooked_method'
         # self._hook_native_methods(tensor_type)
@@ -185,7 +186,7 @@ class TensorFlowHook(FrameworkHook):
         tensor_type.dim = dim
 
     @staticmethod
-    def _add_methods_from__torch_tensor(tensor_type: type, syft_type: type):
+    def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.
          The class TorchTensor is a proxy to avoid extending directly the torch
         tensor class.
@@ -212,19 +213,20 @@ class TensorFlowHook(FrameworkHook):
             "__setattr__",
             "__sizeof__",
             "__subclasshook__",
-            "_get_type",
             # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
             "__gt__",
             "__ge__",
             "__lt__",
             "__le__",
         ]
-        # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
+        # For all methods defined in tf.Tensor or TensorFlowTensor
+        # that are not internal methods (like __class__etc)
         for attr in dir(syft_type):
             if attr not in exclude:
+                # Alias `attr` method as `native_attr` if it already exists
                 if hasattr(tensor_type, attr):
                     setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
-                # Add to the native tensor this method
+                # Add this method to the TF tensor
                 setattr(tensor_type, attr, getattr(TensorFlowTensor, attr))
 
     @classmethod
@@ -234,3 +236,7 @@ class TensorFlowHook(FrameworkHook):
     @classmethod
     def create_shape(cls, shape_dims):
         return tf.TensorShape(shape_dims)
+
+    @classmethod
+    def create_zeros(shape, dtype, **kwargs):
+        return tf.zeros(shape, dtype=dtype, **kwargs)
