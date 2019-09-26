@@ -1,11 +1,11 @@
 import logging
 
 import tensorflow as tf
-from tensorflow.python.framework.ops import EagerTensor
+from tensorflow.python.framework.ops import Tensor
 
 import syft
-from syft import workers
 from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.tensor import initialize_tensor
 
@@ -17,6 +17,7 @@ class TensorFlowHook(FrameworkHook):
         self, tensorflow, local_worker: BaseWorker = None, is_client: bool = True
     ):
         self.tensorflow = tensorflow
+        self.tensorflow.hook = self
         self.framework = self.tensorflow
         syft.tensorflow = tensorflow
         syft.framework = syft.tensorflow
@@ -38,7 +39,7 @@ class TensorFlowHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = workers.VirtualWorker(
+            self.local_worker = VirtualWorker(
                 hook=self, is_client_worker=is_client, id="me"
             )
         else:
@@ -48,7 +49,7 @@ class TensorFlowHook(FrameworkHook):
 
         self.args_hook_for_overloaded_attr = {}
 
-        self._hook_native_tensor(tensorflow.Tensor, TensorFlowTensor)
+        self._hook_native_tensor(Tensor, TensorFlowTensor)
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -80,7 +81,7 @@ class TensorFlowHook(FrameworkHook):
         # self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from__torch_tensor(tensor_type, syft_type)
+        self._add_methods_from_native_tensor(tensor_type, syft_type)
 
         # TODO Need to add 'get_hooked_method'
         # self._hook_native_methods(tensor_type)
