@@ -1,12 +1,10 @@
 import tensorflow as tf
 
+from syft_tensorflow.hook import TensorFlowHook
 import syft
 
 
 def test_serde_constant():
-    hook = syft.TensorFlowHook(tf)
-    syft.tensorflow.hook = hook
-
     z = tf.constant([1.0, 2.0])
     z.id = 123456
 
