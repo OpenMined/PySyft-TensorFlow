@@ -185,7 +185,7 @@ class TensorFlowHook(FrameworkHook):
         tensor_type.dim = dim
 
     @staticmethod
-    def _add_methods_from__torch_tensor(tensor_type: type, syft_type: type):
+    def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.
          The class TorchTensor is a proxy to avoid extending directly the torch
         tensor class.
@@ -212,19 +212,20 @@ class TensorFlowHook(FrameworkHook):
             "__setattr__",
             "__sizeof__",
             "__subclasshook__",
-            "_get_type",
             # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
             "__gt__",
             "__ge__",
             "__lt__",
             "__le__",
         ]
-        # For all methods defined in TorchTensor which are not internal methods (like __class__etc)
+        # For all methods defined in tf.Tensor or TensorFlowTensor
+        # that are not internal methods (like __class__etc)
         for attr in dir(syft_type):
             if attr not in exclude:
+                # Alias `attr` method as `native_attr` if it already exists
                 if hasattr(tensor_type, attr):
                     setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
-                # Add to the native tensor this method
+                # Add this method to the TF tensor
                 setattr(tensor_type, attr, getattr(TensorFlowTensor, attr))
 
     @classmethod
@@ -234,3 +235,7 @@ class TensorFlowHook(FrameworkHook):
     @classmethod
     def create_shape(cls, shape_dims):
         return tf.TensorShape(shape_dims)
+
+    @classmethod
+    def create_zeros(shape, dtype, **kwargs):
+        return tf.zeros(shape, dtype=dtype, **kwargs)
