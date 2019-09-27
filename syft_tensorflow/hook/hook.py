@@ -9,6 +9,7 @@ from syft.workers.virtual import VirtualWorker
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.tensor import initialize_tensor
 
+from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
 
 
@@ -19,7 +20,8 @@ class TensorFlowHook(FrameworkHook):
         self.tensorflow = tensorflow
         self.tensorflow.hook = self
         self.framework = self.tensorflow
-        syft.tensorflow = tensorflow
+
+        syft.tensorflow = TensorFlowAttributes(tensorflow)
         syft.framework = syft.tensorflow
         syft.tensorflow.hook = self
 
@@ -50,6 +52,8 @@ class TensorFlowHook(FrameworkHook):
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
+
+        self._hook_tensorflow_module()
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -85,6 +89,9 @@ class TensorFlowHook(FrameworkHook):
 
         # TODO Need to add 'get_hooked_method'
         # self._hook_native_methods(tensor_type)
+
+    def _hook_tensorflow_module(hook_self):
+        pass
 
     def _add_registration_to___init__(
         hook_self, tensor_type: type, is_tensor: bool = False
