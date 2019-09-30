@@ -79,7 +79,7 @@ class TensorFlowTensor(AbstractTensor):
     @property
     def shape(self):
         if self.is_wrapper:
-            return self.child.shape
+            return self.child.shape.as_list()
         else:
             return self.native_shape
 
@@ -222,7 +222,7 @@ class TensorFlowTensor(AbstractTensor):
                 ptr_id = syft.ID_PROVIDER.pop()
 
         if shape is None:
-            shape = self.shape
+            shape = self.shape.as_list()
 
         ptr = syft.PointerTensor.create_pointer(
             self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
@@ -261,6 +261,6 @@ class TensorFlowTensor(AbstractTensor):
                 out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
 
             if big_repr:
-                out += "\n\tShape: " + str(self.shape)
+                out += "\n\tShape: " + str(self.shape.as_list())
 
             return out
