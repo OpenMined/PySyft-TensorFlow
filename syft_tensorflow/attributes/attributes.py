@@ -15,7 +15,7 @@ class TensorFlowAttributes(FrameworkAttributes):
 
     TensorFlowAttributes is a special class where all custom attributes related
     to the torch module can be added. Any global parameter, configuration,
-    or reference relating to PyTorch should be stored here instead of
+    or reference relating to TensorFlow should be stored here instead of
     attaching it directly to some other part of the global namespace.
 
     The main reason we need this is because the hooking process occasionally
@@ -40,7 +40,8 @@ class TensorFlowAttributes(FrameworkAttributes):
 
         # List modules that we will hook
         self.tensorflow_modules = {
-            "tensorflow": tensorflow,
+            # "tensorflow": tensorflow,
+            "tensorflow.keras.activations": tensorflow.keras.activations,
             # "tensorflow.keras": tensorflow.keras,
         }
 
