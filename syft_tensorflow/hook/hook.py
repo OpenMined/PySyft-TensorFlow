@@ -21,7 +21,7 @@ class TensorFlowHook(FrameworkHook):
         self.tensorflow.hook = self
         self.framework = self.tensorflow
 
-        syft.tensorflow = TensorFlowAttributes(tensorflow)
+        syft.tensorflow = TensorFlowAttributes(tensorflow, self)
         syft.framework = syft.tensorflow
         syft.tensorflow.hook = self
 

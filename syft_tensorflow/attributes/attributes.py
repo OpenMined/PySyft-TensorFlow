@@ -1,9 +1,13 @@
 from types import ModuleType
+import typing
 
 from tensorflow.python.framework.ops import EagerTensor
 from syft.generic.frameworks.attributes import FrameworkAttributes
 
-from syft_tensorflow.hook import TensorFlowHook
+from syft_tensorflow.tensor import TensorFlowTensor
+
+if typing.TYPE_CHECKING:
+    from syft_tensorflow.hook import TensorFlowHook
 
 
 class TensorFlowAttributes(FrameworkAttributes):
@@ -26,8 +30,9 @@ class TensorFlowAttributes(FrameworkAttributes):
     """
 
     ALIAS = "tensorflow"
+    Tensor = TensorFlowTensor
 
-    def __init__(self, tensorflow: ModuleType, hook: TensorFlowHook):
+    def __init__(self, tensorflow: ModuleType, hook: "TensorFlowHook"):
         # Stash the hook here for global access elsewhere
         self.hook = hook
 
@@ -40,7 +45,7 @@ class TensorFlowAttributes(FrameworkAttributes):
         }
 
         # Set of all function names with module as prefix in the modules to hook
-        self.tensorflow_module_functions = {
+        self.tensorflow_modules_functions = {
             f"{module_name}.{func_name}"
             for module_name, tensorflow_module in self.tensorflow_modules.items()
             for func_name in dir(tensorflow_module)
