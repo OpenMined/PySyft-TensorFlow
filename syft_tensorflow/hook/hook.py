@@ -222,6 +222,25 @@ class TensorFlowHook(FrameworkHook):
 
         tensor_type.dim = dim
 
+    @classmethod
+    def _get_hooked_func(cls, attr):
+        """TF-specific implementation. See the subclass for more."""
+
+        if hasattr(attr, "_tf_api_names"):
+            assert attr._tf_api_names
+            new_submodule = ".".join(attr._tf_api_names[0].split(".")[:-1])
+            if new_submodule:
+                attr.__module__ = ".".join(("tensorflow", new_submodule))
+            else:
+                attr.__module__ = "tensorflow"
+
+        if hasattr(attr, "_keras_api_names"):
+            assert attr._keras_api_names
+            new_submodule = ".".join(attr._keras_api_names[0].split(".")[:-1])
+            attr.__module__ = ".".join(("tensorflow", new_submodule))
+
+        return super()._get_hooked_func(attr)
+
     @staticmethod
     def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.

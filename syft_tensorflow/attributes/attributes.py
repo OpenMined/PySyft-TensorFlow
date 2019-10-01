@@ -40,13 +40,14 @@ class TensorFlowAttributes(FrameworkAttributes):
 
         # List modules that we will hook
         self.tensorflow_modules = {
-            # "tensorflow": tensorflow,
+            "tensorflow": tensorflow,
             "tensorflow.keras.activations": tensorflow.keras.activations,
+            "tensorflow.math": tensorflow.math,
             # "tensorflow.keras": tensorflow.keras,
         }
 
         # Set of all function names with module as prefix in the modules to hook
-        self.tensorflow_modules_functions = {
+        self._tensorflow_modules_functions = {
             f"{module_name}.{func_name}"
             for module_name, tensorflow_module in self.tensorflow_modules.items()
             for func_name in dir(tensorflow_module)
@@ -72,17 +73,6 @@ class TensorFlowAttributes(FrameworkAttributes):
         # SECTION: List all torch tensor methods we want to overload
         self.tensor_types = [tensorflow.Tensor, tensorflow.Variable]
 
-        self.tensorvar_methods = list(
-            {method for tensorvar in self.tensor_types for method in dir(tensorvar)}
-        )
-        self.tensorvar_methods += [
-            "get_shape",
-            "share",
-            "fix_precision",
-            "decode",
-            "end_get",
-        ]
-
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
 
@@ -99,15 +89,12 @@ class TensorFlowAttributes(FrameworkAttributes):
             self.guard[f"syft.{key}"] = self.guard[key]
 
         # Concatenate torch functions and torch methods
-        self.allowed_commands = {
-            "tensorvar_methods": self.tensorvar_methods,
-            "framework_functions": self.tensorflow_modules_functions,
-        }
+        self.allowed_commands = self._tensorflow_modules_functions
 
         # The equivalent concatenation of native torch function names and native torch method names
         self.native_commands = {
-            command_type: {cmd: self.get_native_framework_name(cmd) for cmd in commands}
-            for command_type, commands in self.allowed_commands.items()
+            command_name: self.get_native_framework_name(command_name)
+            for command_name in self.allowed_commands
         }
 
         self.command_guard = self._command_guard

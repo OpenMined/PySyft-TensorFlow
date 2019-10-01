@@ -133,7 +133,9 @@ class TensorFlowTensor(AbstractTensor):
             if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
 
-            ptr = self.owner.send(self, location, garbage_collect_data=garbage_collect_data)
+            ptr = self.owner.send(
+                self, location, garbage_collect_data=garbage_collect_data
+            )
 
             ptr.description = self.description
             ptr.tags = self.tags
@@ -230,7 +232,14 @@ class TensorFlowTensor(AbstractTensor):
             shape = self.shape.as_list()
 
         ptr = syft.PointerTensor.create_pointer(
-            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
+            self,
+            location,
+            id_at_location,
+            register,
+            owner,
+            ptr_id,
+            garbage_collect_data,
+            shape,
         )
 
         return ptr
@@ -263,7 +272,9 @@ class TensorFlowTensor(AbstractTensor):
 
             if self.description is not None:
                 big_repr = True
-                out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+                out += (
+                    "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+                )
 
             if big_repr:
                 out += "\n\tShape: " + str(self.shape.as_list())
@@ -331,22 +342,10 @@ class TensorFlowTensor(AbstractTensor):
                 pass
 
             # TODO: clean this line
-            # cmd = (
-            #     "syft.local_worker.hook."
-            #     + ".".join(cmd.split(".")[:-1])
-            #     + ".native_"
-            #     + cmd.split(".")[-1]
-            # )
-
-            cmd_splt = cmd.split(".")
-            cmd_splt.remove('python')
-
-            cmd = (
-                "syft.local_worker.hook."
-                + ".".join(cmd_splt[:-1])
-                + ".native_"
-                + cmd.split(".")[-1]
-            )
+            cmd_split = cmd.split(".")
+            cmd_path = cmd_split[:-1]
+            cmd_name = cmd_split[-1]
+            cmd = "syft.local_worker.hook." + ".".join(cmd_path) + ".native_" + cmd_name
 
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
