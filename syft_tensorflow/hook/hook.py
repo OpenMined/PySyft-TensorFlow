@@ -42,6 +42,7 @@ class TensorFlowHook(FrameworkHook):
             # same process)
             self.local_worker = VirtualWorker(
                 hook=self, is_client_worker=is_client, id="me"
+                
             )
         else:
             self.local_worker.hook = self
@@ -53,6 +54,9 @@ class TensorFlowHook(FrameworkHook):
         self._hook_native_tensor(Tensor, TensorFlowTensor)
 
         self._hook_tensorflow_module()
+
+        syft.local_worker = self.local_worker
+        syft.hook = self
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
