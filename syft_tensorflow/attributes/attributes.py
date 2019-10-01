@@ -1,9 +1,8 @@
-from types import ModuleType
 
 from tensorflow.python.framework.ops import EagerTensor
 from syft.generic.frameworks.attributes import FrameworkAttributes
 
-from syft_tensorflow.hook import TensorFlowHook
+from syft_tensorflow.tensor import TensorFlowTensor
 
 
 class TensorFlowAttributes(FrameworkAttributes):
@@ -11,7 +10,7 @@ class TensorFlowAttributes(FrameworkAttributes):
 
     TensorFlowAttributes is a special class where all custom attributes related
     to the torch module can be added. Any global parameter, configuration,
-    or reference relating to PyTorch should be stored here instead of
+    or reference relating to TensorFlow should be stored here instead of
     attaching it directly to some other part of the global namespace.
 
     The main reason we need this is because the hooking process occasionally
@@ -26,8 +25,9 @@ class TensorFlowAttributes(FrameworkAttributes):
     """
 
     ALIAS = "tensorflow"
+    Tensor = TensorFlowTensor
 
-    def __init__(self, tensorflow: ModuleType, hook: TensorFlowHook):
+    def __init__(self, tensorflow, hook):
         # Stash the hook here for global access elsewhere
         self.hook = hook
 
@@ -35,12 +35,13 @@ class TensorFlowAttributes(FrameworkAttributes):
 
         # List modules that we will hook
         self.tensorflow_modules = {
-            "tensorflow": tensorflow,
+            #"tensorflow": tensorflow,
+            "tensorflow.keras.activations": tensorflow.keras.activations,
             # "tensorflow.keras": tensorflow.keras,
         }
 
         # Set of all function names with module as prefix in the modules to hook
-        self.tensorflow_module_functions = {
+        self.tensorflow_modules_functions = {
             f"{module_name}.{func_name}"
             for module_name, tensorflow_module in self.tensorflow_modules.items()
             for func_name in dir(tensorflow_module)
