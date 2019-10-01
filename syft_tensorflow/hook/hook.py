@@ -14,7 +14,10 @@ from syft_tensorflow.tensor import TensorFlowTensor
 
 class TensorFlowHook(FrameworkHook):
     def __init__(
-        self, tensorflow, local_worker: BaseWorker = None, is_client: bool = True
+        self,
+        tensorflow,
+        local_worker: BaseWorker = None,
+        is_client: bool = True
     ):
         self.tensorflow = tensorflow
         self.tensorflow.hook = self
@@ -26,7 +29,7 @@ class TensorFlowHook(FrameworkHook):
         self.local_worker = local_worker
 
         if hasattr(tensorflow, "tf_hooked"):
-            logging.warning("TF was already hooked... skipping hooking process")
+            logging.warning("TF was already hooked, skipping hooking process")
             self.local_worker = syft.local_worker
             return
         else:
@@ -71,13 +74,16 @@ class TensorFlowHook(FrameworkHook):
         # Overload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
-        # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
+        # Returns a list of methods to be overloaded,
+        # stored in the dict to_auto_overload
         # with tensor_type as a key
-        # self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
+        # self.to_auto_overload[tensor_type] =
+        # self._which_methods_should_we_auto_overload(
         #     tensor_type
         # )
 
-        # [We don't rename native methods as torch tensors are not hooked] Rename native functions
+        # [We don't rename native methods as torch tensors are not hooked]
+        #  Rename native functions
         # self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
@@ -104,7 +110,15 @@ class TensorFlowHook(FrameworkHook):
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
 
-        def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
+        def new___init__(
+            cls,
+            *args,
+            owner=None,
+            id=None,
+            register=True,
+            **kwargs
+        ):
+
             initialize_tensor(
                 hook_self=hook_self,
                 cls=cls,
@@ -213,7 +227,7 @@ class TensorFlowHook(FrameworkHook):
             "__setattr__",
             "__sizeof__",
             "__subclasshook__",
-            # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
+            # "__eq__", # FIXME see PySyft
             "__gt__",
             "__ge__",
             "__lt__",
@@ -225,7 +239,11 @@ class TensorFlowHook(FrameworkHook):
             if attr not in exclude:
                 # Alias `attr` method as `native_attr` if it already exists
                 if hasattr(tensor_type, attr):
-                    setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
+                    setattr(
+                        tensor_type,
+                        f"native_{attr}",
+                        getattr(tensor_type, attr)
+                    )
                 # Add this method to the TF tensor
                 setattr(tensor_type, attr, getattr(TensorFlowTensor, attr))
 

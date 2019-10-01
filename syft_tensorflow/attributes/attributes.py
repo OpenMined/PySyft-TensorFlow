@@ -39,21 +39,28 @@ class TensorFlowAttributes(FrameworkAttributes):
             # "tensorflow.keras": tensorflow.keras,
         }
 
-        # Set of all function names with module as prefix in the modules to hook
+        # Set of all function names with module
+        # as prefix in the modules to hook
         self.tensorflow_module_functions = {
             f"{module_name}.{func_name}"
-            for module_name, tensorflow_module in self.tensorflow_modules.items()
+            for module_name, tensorflow_module
+            in self.tensorflow_modules.items()
+
             for func_name in dir(tensorflow_module)
         }
 
-        # Store reference to all tf functions by string name stored in tensorflow_modules_functions
+        # Store reference to all tf functions by string name
+        # stored in tensorflow_modules_functions
         self.eval_tensorflow_modules_functions = {
             f"{module_name}.{func_name}": getattr(tensorflow_module, func_name)
-            for module_name, tensorflow_module in self.tensorflow_modules.items()
+            for module_name, tensorflow_module
+            in self.tensorflow_modules.items()
+
             for func_name in dir(tensorflow_module)
         }
 
-        # Add special functions to exclude from the hook **in alphabetical order**
+        # Add special functions to exclude from the hook
+        # **in alphabetical order**
         # Reasons can be:
         # - Used for internal process like printing tensors
         # - Don't use tensors so are bound to have local executions
@@ -67,7 +74,8 @@ class TensorFlowAttributes(FrameworkAttributes):
         self.tensor_types = [tensorflow.Tensor, tensorflow.Variable]
 
         self.tensorvar_methods = list(
-            {method for tensorvar in self.tensor_types for method in dir(tensorvar)}
+            {method for tensorvar in self.tensor_types
+             for method in dir(tensorvar)}
         )
         self.tensorvar_methods += [
             "get_shape",
@@ -77,7 +85,8 @@ class TensorFlowAttributes(FrameworkAttributes):
             "end_get",
         ]
 
-        # SECTION: Build the guard, that define which functions or methods can be safely called by
+        # SECTION: Build the guard, that define which functions or methods
+        # can be safely called by
         # external or local workers
 
         # Add all tensor types
@@ -98,9 +107,12 @@ class TensorFlowAttributes(FrameworkAttributes):
             "framework_functions": self.tensorflow_modules_functions,
         }
 
-        # The equivalent concatenation of native torch function names and native torch method names
+        # The equivalent concatenation of native torch function
+        # names and native torch method names
         self.native_commands = {
-            command_type: {cmd: self.get_native_framework_name(cmd) for cmd in commands}
+            command_type: {
+              cmd: self.get_native_framework_name(cmd) for cmd in commands
+            }
             for command_type, commands in self.allowed_commands.items()
         }
 
