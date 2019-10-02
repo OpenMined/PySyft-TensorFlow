@@ -10,17 +10,17 @@ from syft.generic.tensor import initialize_tensor
 
 def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
     """
-    This function converts a TF tensor into a serialized TF tensor
-    using tf.io. We do this because it's native to TF, and they've optimized it.
+    This function converts a TF tensor into a serialized TF tensor using
+    tf.io. We do this because it's native to TF, and they've optimized it.
 
     Args:
       tensor (torch.Tensor): an input tensor to be serialized
 
     Returns:
-      tuple: serialized tuple of torch tensor. The first value is the
-      id of the tensor and the second is the binary for the PyTorch
-      object. The third is the chain of abstractions, and the fourth
-      (optinally) is the chain of graident tensors (nested tuple)
+      tuple: serialized tuple of TensorFlow tensor. The first value is the
+      id of the tensor and the second is the binary for the TensorFlow
+      object. The third is the tensor dtype and the fourth is the chain
+      of abstractions.
     """
 
     tensor_ser = tf.io.serialize_tensor(tensor)
@@ -36,7 +36,7 @@ def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
 
 def _detail_tf_tensor(worker, tensor_tuple) -> tf.Tensor:
     """
-    This function converts a serialized tf tensor into a local tf tensor
+    This function converts a serialized tf tensor into a local TF tensor
     using tf.io.
 
     Args:
@@ -72,9 +72,67 @@ def _detail_tf_tensor(worker, tensor_tuple) -> tf.Tensor:
     return tensor
 
 
+def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
+    """
+    This function converts a TF tensor shape into a serialized list.
+
+    Args:
+      tensor (tf.TensorShape): an input tensor shape to be serialized
+
+    Returns:
+      tuple: serialized tuple of TF tensor shape. The first value is
+      the binary for the TensorShape object. The second is the
+      chain of abstractions.
+    """
+
+    tensorshape_list_ser = syft.serde.serde._simplify(
+        tensorshape.as_list())
+
+    # TODO[Yann] currently this condition is never true,
+    # tf.TensorShape needs to be hooked
+    chain = None
+    if hasattr(tensorshape, "child"):
+        chain = syft.serde._simplify(tensorshape.child)
+
+    return tensorshape_list_ser, chain
+
+
+def _detail_tf_tensorshape(worker, tensor_tuple) -> tf.TensorShape:
+    """
+    This function converts a serialized TF tensor shape into a local list.
+
+    Args:
+        tensor_tuple (bin): serialized obj of TF tensor shape as list.
+            It's a tuple where the first value is the binary for the
+            tensorflow shape (as list), and the third value is the
+            chain of tensor abstractions.
+
+    Returns:
+        tf.Tensor: a deserialized TF tensor
+    """
+
+    tensorshape_list_bin, chain = tensor_tuple
+
+    tensorshape_list = syft.serde.serde._detail(
+        worker,
+        tensorshape_list_bin)
+
+    tensorshape = tf.TensorShape(tensorshape_list)
+
+    # TODO[Yann] currently this condition is never true,
+    # tf.TensorShape needs to be hooked
+    if chain is not None:
+        chain = syft.serde._detail(worker, chain)
+        tensorshape.child = chain
+        tensorshape.is_wrapper = True
+
+    return tensorshape
+
+
 MAP_TF_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         EagerTensor: (_simplify_tf_tensor, _detail_tf_tensor),
         tf.Tensor: (_simplify_tf_tensor, _detail_tf_tensor),
+        tf.TensorShape: (_simplify_tf_tensorshape, _detail_tf_tensorshape),
     }
 )

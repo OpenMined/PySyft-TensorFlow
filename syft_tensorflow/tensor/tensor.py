@@ -84,7 +84,7 @@ class TensorFlowTensor(AbstractTensor):
     @property
     def shape(self):
         if self.is_wrapper:
-            return self.child.shape.as_list()
+            return self.child.shape
         else:
             return self.native_shape
 
@@ -229,7 +229,7 @@ class TensorFlowTensor(AbstractTensor):
                 ptr_id = syft.ID_PROVIDER.pop()
 
         if shape is None:
-            shape = self.shape.as_list()
+            shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
             self,
