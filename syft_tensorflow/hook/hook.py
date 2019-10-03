@@ -1,4 +1,5 @@
 import logging
+import types
 
 import tensorflow as tf
 from tensorflow.python.framework.ops import Tensor
@@ -9,6 +10,7 @@ from syft.workers.virtual import VirtualWorker
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.tensor import initialize_tensor
 
+from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
 
 
@@ -22,7 +24,8 @@ class TensorFlowHook(FrameworkHook):
         self.tensorflow = tensorflow
         self.tensorflow.hook = self
         self.framework = self.tensorflow
-        syft.tensorflow = tensorflow
+
+        syft.tensorflow = TensorFlowAttributes(tensorflow, self)
         syft.framework = syft.tensorflow
         syft.tensorflow.hook = self
 
@@ -53,6 +56,11 @@ class TensorFlowHook(FrameworkHook):
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
+
+        self._hook_tensorflow_module()
+
+        syft.local_worker = self.local_worker
+        syft.hook = self
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -91,6 +99,35 @@ class TensorFlowHook(FrameworkHook):
 
         # TODO Need to add 'get_hooked_method'
         # self._hook_native_methods(tensor_type)
+
+    def _hook_tensorflow_module(self):
+        tensorflow_modules = syft.tensorflow.tensorflow_modules
+
+        for module_name, tensorflow_module in tensorflow_modules.items():
+            for func in dir(tensorflow_module):
+
+                # Some functions we want to ignore (not override). Such functions have been hard
+                # coded into the torch_attribute exclude (see TorchAttribute class)
+                if func in syft.tensorflow.exclude:
+                    continue
+
+                # ignore dunder functions
+                if "__" in func:
+                    continue
+
+                # ignore capitalized func values which are Classes not functinos
+                if func[0].isupper():
+                    continue
+
+                # ignore hidden functins
+                if func[0] == "_":
+                    continue
+
+                # If we haven't already overloaded this function
+                if "native_" in func or f"native_{func}" in dir(tensorflow_module):
+                    continue
+
+                self._perform_function_overloading(tensorflow_module, func)
 
     def _add_registration_to___init__(
         hook_self, tensor_type: type, is_tensor: bool = False
@@ -198,6 +235,25 @@ class TensorFlowHook(FrameworkHook):
             return len(self.shape)
 
         tensor_type.dim = dim
+
+    @classmethod
+    def _get_hooked_func(cls, attr):
+        """TF-specific implementation. See the subclass for more."""
+
+        if hasattr(attr, "_tf_api_names"):
+            assert attr._tf_api_names
+            new_submodule = ".".join(attr._tf_api_names[0].split(".")[:-1])
+            if new_submodule:
+                attr.__module__ = ".".join(("tensorflow", new_submodule))
+            else:
+                attr.__module__ = "tensorflow"
+
+        if hasattr(attr, "_keras_api_names"):
+            assert attr._keras_api_names
+            new_submodule = ".".join(attr._keras_api_names[0].split(".")[:-1])
+            attr.__module__ = ".".join(("tensorflow", new_submodule))
+
+        return super()._get_hooked_func(attr)
 
     @staticmethod
     def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):

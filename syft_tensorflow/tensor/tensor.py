@@ -5,6 +5,11 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
+from syft.exceptions import PureFrameworkTensorFoundError
+from syft.generic.frameworks.types import FrameworkTensor
+
+from syft.generic.frameworks.hook import hook_args
+
 
 class TensorFlowTensor(AbstractTensor):
     """Add methods to this tensor to have them added to every tf.Tensor object.
@@ -132,9 +137,7 @@ class TensorFlowTensor(AbstractTensor):
                 self.child.garbage_collect_data = False
 
             ptr = self.owner.send(
-              self,
-              location,
-              garbage_collect_data=garbage_collect_data
+                self, location, garbage_collect_data=garbage_collect_data
             )
 
             ptr.description = self.description
@@ -234,7 +237,7 @@ class TensorFlowTensor(AbstractTensor):
             owner,
             ptr_id,
             garbage_collect_data,
-            shape
+            shape,
         )
 
         return ptr
@@ -267,10 +270,87 @@ class TensorFlowTensor(AbstractTensor):
 
             if self.description is not None:
                 big_repr = True
-                out += "\n\tDescription: "
-                + str(self.description).split("\n")[0] + "..."
+                out += (
+                    "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+                )
 
             if big_repr:
-                out += "\n\tShape: " + str(self.shape)
+                out += "\n\tShape: " + str(self.shape.as_list())
 
             return out
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Operates as a router for functions. A function call always starts
+        by being handled here and 3 scenarii must be considered:
+
+        Real Torch tensor:
+            The arguments of the function are real tensors so we should
+            run the native torch command
+
+        Torch wrapper:
+            The arguments are just wrappers at the top of a chain
+            (ex: wrapper>LoggingTensor>Torch tensor), so just forward
+            the instruction to the next layer type in the chain (in
+            the example above to LoggingTensor.handle_func_command),
+            get the response and replace a wrapper on top of all tensors
+            found in the response.
+
+        Syft Tensor:
+            The arguments are syft tensors of same type: this can happen
+            if at any node of the chain where some function is forwarded,
+            the handle_func_command modify the function and make a new
+            call but keeps the arguments "un-wrapped". Making a new call
+            means that by default the command is treated here in the
+            global router.
+
+        :param command: instruction of a function command: (command name,
+        <no self>, arguments[, kwargs])
+        :return: the response of the function command
+        """
+        cmd, _, args, kwargs = command
+
+        try:  # will work if tensors are wrappers
+
+            # Replace all torch tensor with their child attribute
+            # Note that we return also args_type which helps handling case 3 in the docstring
+            new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
+                cmd, args, kwargs, return_args_type=True
+            )
+            # This handles case 3: it redirects the command to the appropriate class depending
+            # of the syft type of the arguments and returns
+            if args_type not in FrameworkTensor:
+                return args_type.handle_func_command(command)
+
+            # build the new command
+            new_command = (cmd, None, new_args, new_kwargs)
+            # Send it to the appropriate class and get the response
+            response = new_type.handle_func_command(new_command)
+            # Put back the wrappers where needed
+            response = hook_args.hook_response(cmd, response, wrap_type=args_type)
+        except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
+
+            # Check that the function has not been overwritten
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, cmd)
+                return command(*args, **kwargs)
+            except AttributeError:
+                pass
+
+            # TODO: clean this line
+            cmd_split = cmd.split(".")
+            cmd_path = cmd_split[:-1]
+            cmd_name = cmd_split[-1]
+            cmd = "syft.local_worker.hook." + ".".join(cmd_path) + ".native_" + cmd_name
+
+            # Run the native function with the new args
+            # Note the the cmd should already be checked upon reception by the worker
+            # in the execute_command function
+            if isinstance(args, tuple):
+                response = eval(cmd)(*args, **kwargs)
+            else:
+                response = eval(cmd)(args, **kwargs)
+
+        return response
