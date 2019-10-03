@@ -12,8 +12,7 @@ class TensorFlowTensor(AbstractTensor):
     This tensor is simply a more convenient way to add custom functions to
     all TensorFlow tensor types. When you add a function to this tensor,
     it will be added to EVERY native TF tensor type (i.e. tf.Tensor)
-    automatically by the TensorFlowHook
-    (which is in frameworks/tensorflow/hook.py).
+    automatically by the TensorFlowHook.
 
     Note: all methods from AbstractTensor will also be included because this
     tensor extends AbstractTensor. So, if you're looking for a method on
