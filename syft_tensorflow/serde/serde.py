@@ -11,7 +11,8 @@ from syft.generic.tensor import initialize_tensor
 def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
     """
     This function converts a TF tensor into a serialized TF tensor
-    using tf.io. We do this because it's native to TF, and they've optimized it.
+    using tf.io. We do this because it's native to TF,
+    and they've optimized it.
 
     Args:
       tensor (torch.Tensor): an input tensor to be serialized
