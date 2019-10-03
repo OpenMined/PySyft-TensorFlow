@@ -1,2 +1,1 @@
-syft>=0.1.22a1
 tensorflow>=2.0.0-rc2

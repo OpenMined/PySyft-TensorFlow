@@ -22,7 +22,8 @@ setup(
     author_email="contact@openmined.org",
     description=("TensorFlow Bindings for PySyft"),
     license="Apache-2.0",
-    keywords="deep learning artificial intelligence privacy secure multi-party computation federated learning differential privacy",
+    keywords="deep learning artificial intelligence privacy secure " +
+             "multi-party computation federated learning differential privacy",
     packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
     long_description=read("README.md"),

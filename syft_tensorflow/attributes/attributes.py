@@ -49,18 +49,24 @@ class TensorFlowAttributes(FrameworkAttributes):
         # Set of all function names with module as prefix in the modules to hook
         self._tensorflow_modules_functions = {
             f"{module_name}.{func_name}"
-            for module_name, tensorflow_module in self.tensorflow_modules.items()
+            for module_name, tensorflow_module
+            in self.tensorflow_modules.items()
+
             for func_name in dir(tensorflow_module)
         }
 
-        # Store reference to all tf functions by string name stored in tensorflow_modules_functions
+        # Store reference to all tf functions by string name
+        # stored in tensorflow_modules_functions
         self.eval_tensorflow_modules_functions = {
             f"{module_name}.{func_name}": getattr(tensorflow_module, func_name)
-            for module_name, tensorflow_module in self.tensorflow_modules.items()
+            for module_name, tensorflow_module
+            in self.tensorflow_modules.items()
+
             for func_name in dir(tensorflow_module)
         }
 
-        # Add special functions to exclude from the hook **in alphabetical order**
+        # Add special functions to exclude from the hook
+        # **in alphabetical order**
         # Reasons can be:
         # - Used for internal process like printing tensors
         # - Don't use tensors so are bound to have local executions
@@ -73,7 +79,8 @@ class TensorFlowAttributes(FrameworkAttributes):
         # SECTION: List all torch tensor methods we want to overload
         self.tensor_types = [tensorflow.Tensor, tensorflow.Variable]
 
-        # SECTION: Build the guard, that define which functions or methods can be safely called by
+        # SECTION: Build the guard, that define which
+        # functions or methods can be safely called by
         # external or local workers
 
         # Add all tensor types
@@ -91,7 +98,8 @@ class TensorFlowAttributes(FrameworkAttributes):
         # Concatenate torch functions and torch methods
         self.allowed_commands = self._tensorflow_modules_functions
 
-        # The equivalent concatenation of native torch function names and native torch method names
+        # The equivalent concatenation of native torch function
+        # names and native torch method names
         self.native_commands = {
             command_name: self.get_native_framework_name(command_name)
             for command_name in self.allowed_commands
