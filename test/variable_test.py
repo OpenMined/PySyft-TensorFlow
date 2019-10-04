@@ -1,11 +1,9 @@
 import tensorflow as tf
+import numpy as np
 
-def test_variable_add(remote):
-  #breakpoint()
-  x = tf.Variable(5)
-  x = tf.Variable(5).send(remote)
-  y = tf.Variable(5).send(remote)
 
-  z = x + y
-
-  print(z.get())
+def test_send_get_variable(remote):
+  x_to_give = tf.Variable(2.0)
+  x_ptr = x_to_give.send(remote)
+  x_gotten = x_ptr.get()
+  assert np.array_equal(x_to_give.numpy(), x_gotten.numpy())
