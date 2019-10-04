@@ -20,6 +20,7 @@ from syft_tensorflow.tensor import TensorFlowTensor
 
 type_rule = {
     tf.Tensor: one,
+    tf.Variable: one,
     TensorFlowTensor: one,
     EagerTensor: one,
 }
@@ -32,10 +33,12 @@ def default_forward(i):
 
 forward_func = {
     tf.Tensor: default_forward,
+    tf.Variable: default_forward,
     EagerTensor: default_forward,
 }
 backward_func = {
     tf.Tensor: lambda i: i.wrap(),
+    tf.Variable: lambda i: i.wrap(),
     TensorFlowTensor: lambda i: i.wrap(),
     EagerTensor: lambda i: i.wrap(),
 }
