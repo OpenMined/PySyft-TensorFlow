@@ -22,7 +22,7 @@ class TensorFlowHook(FrameworkHook):
         is_client: bool = True
     ):
 
-        self.tensorflow = tf
+        self.tensorflow = tensorflow
         self.framework = self.tensorflow
 
         syft.tensorflow = TensorFlowAttributes(tf, self)
