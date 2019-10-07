@@ -232,6 +232,9 @@ class TensorFlowVariable(AbstractTensor):
         if shape is None:
             shape = self.shape
 
+        if object_type is None:
+            object_type = tf.Variable
+
         ptr = syft.PointerTensor.create_pointer(
             self,
             location,
@@ -241,6 +244,7 @@ class TensorFlowVariable(AbstractTensor):
             ptr_id,
             garbage_collect_data,
             shape,
+            object_type=object_type,
         )
 
         return ptr
