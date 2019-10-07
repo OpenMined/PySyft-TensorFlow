@@ -66,7 +66,7 @@ class TensorFlowHook(FrameworkHook):
 
         self.args_hook_for_overloaded_attr = {}
 
-        #self._hook_native_tensor(Tensor, TensorFlowTensor)
+        self._hook_native_tensor(Tensor, TensorFlowTensor)
         self._hook_native_tensor(tf.Variable, TensorFlowVariable)
 
         self._hook_pointer_tensor_methods(Tensor)
