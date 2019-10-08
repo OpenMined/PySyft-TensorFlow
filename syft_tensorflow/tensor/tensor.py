@@ -235,7 +235,6 @@ class TensorFlowTensor(AbstractTensor):
         if object_type is None:
             object_type = tf.Tensor
 
-        print("pointerTensor", self)
         ptr = syft.PointerTensor.create_pointer(
             self,
             location,
