@@ -121,7 +121,7 @@ class TensorFlowHook(FrameworkHook):
                 if "native_" in func or f"native_{func}" in dir(tensorflow_module):
                     continue
 
-                self._perform_function_overloading(tensorflow_module, func)
+                self._perform_function_overloading(module_name, tensorflow_module, func)
 
     def _add_registration_to___init__(
         hook_self, tensor_type: type, is_tensor: bool = False
@@ -229,25 +229,6 @@ class TensorFlowHook(FrameworkHook):
             return len(self.shape)
 
         tensor_type.dim = dim
-
-    @classmethod
-    def _get_hooked_func(cls, attr):
-        """TF-specific implementation. See the subclass for more."""
-
-        if hasattr(attr, "_tf_api_names"):
-            assert attr._tf_api_names
-            new_submodule = ".".join(attr._tf_api_names[0].split(".")[:-1])
-            if new_submodule:
-                attr.__module__ = ".".join(("tensorflow", new_submodule))
-            else:
-                attr.__module__ = "tensorflow"
-
-        if hasattr(attr, "_keras_api_names"):
-            assert attr._keras_api_names
-            new_submodule = ".".join(attr._keras_api_names[0].split(".")[:-1])
-            attr.__module__ = ".".join(("tensorflow", new_submodule))
-
-        return super()._get_hooked_func(attr)
 
     @staticmethod
     def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
