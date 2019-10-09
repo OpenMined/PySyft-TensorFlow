@@ -155,14 +155,21 @@ def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
 
     layer_ser = tf.keras.layers.serialize(layer)
 
+    weights = layer.get_weights()
+    weights_ser = syft.serde.serde._simplify(
+        weights)
+
     layer_dict_ser = syft.serde.serde._simplify(
         layer_ser)
+
+    batch_input_shape_ser = syft.serde.serde._simplify(
+        layer_ser['config']['batch_input_shape'])
 
     chain = None
     if hasattr(layer, "child"):
         chain = syft.serde._simplify(layer.child)
 
-    return layer.id, layer_dict_ser, chain
+    return layer.id, layer_dict_ser, weights_ser, batch_input_shape_ser, chain
 
 
 def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
@@ -180,13 +187,25 @@ def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
         tf.Tensor: a deserialized TF tensor
     """
 
-    layer_id, layer_bin, chain = layer_tuple
+    layer_id, layer_bin, weights_bin, batch_input_shape_bin, chain = layer_tuple
 
     layer_dict = syft.serde.serde._detail(
         worker,
         layer_bin)
 
     layer = tf.keras.layers.deserialize(layer_dict)
+
+    weights = syft.serde.serde._detail(
+        worker,
+        weights_bin)
+
+    batch_input_shape = syft.serde.serde._detail(
+        worker,
+        batch_input_shape_bin)
+
+    layer.build(batch_input_shape)
+
+    layer.set_weights(weights)
 
     initialize_tensor(
         hook_self=syft.tensorflow.hook,
