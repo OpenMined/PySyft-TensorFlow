@@ -28,7 +28,7 @@ before_script:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
 script:
-  - coverage run -m pytest test
+  - coverage run -m pytest
   - coverage report --fail-under 0 -m
 notifications:
   on_success: change
