@@ -1,3 +1,4 @@
+import inspect
 import logging
 import types
 
@@ -13,7 +14,7 @@ from syft.generic.tensor import initialize_tensor
 from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
 from syft_tensorflow.tensor import TensorFlowVariable
-from syft_tensorflow.tensor import TensorFlowModule
+from syft_tensorflow.tensor import KerasLayer
 
 
 class TensorFlowHook(FrameworkHook):
@@ -64,8 +65,8 @@ class TensorFlowHook(FrameworkHook):
               tf.Variable
           ),
 
-          tf.Module: self._which_methods_should_we_auto_overload(
-              tf.Module
+          tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
+              tf.keras.layers.Layer
           ),
 
         }
@@ -74,11 +75,12 @@ class TensorFlowHook(FrameworkHook):
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
         self._hook_native_tensor(tf.Variable, TensorFlowVariable)
-        self._hook_native_tensor(tf.Module, TensorFlowModule)
+
+        self._hook_native_keras_objects(tf.keras.layers.Layer, KerasLayer)
 
         self._hook_pointer_tensor_methods(Tensor)
         self._hook_pointer_tensor_methods(tf.Variable)
-        self._hook_pointer_tensor_methods(tf.Module)
+        self._hook_pointer_tensor_methods(tf.keras.layers.Layer)
 
         self._hook_tensorflow_module()
 
@@ -113,6 +115,18 @@ class TensorFlowHook(FrameworkHook):
         self._add_methods_from_native_tensor(tensor_type, syft_type)
 
         self._hook_native_methods(tensor_type)
+
+    def _hook_native_keras_objects(self, tensor_type: type, syft_type: type):
+
+        # Reinitialize init method of Torch tensor with Syft init
+        self._add_registration_to___init__(tensor_type)
+
+        # Overload Torch tensor properties with Syft properties
+        self._hook_properties(tensor_type)
+
+        # Overload auto overloaded with Torch methods
+        self._add_methods_from_native_tensor(tensor_type, syft_type)
+
 
     def _hook_tensorflow_module(self):
         tensorflow_modules = syft.tensorflow.tensorflow_modules
@@ -225,7 +239,6 @@ class TensorFlowHook(FrameworkHook):
                 # Add this method to the TF tensor
                 setattr(tensor_type, attr, getattr(syft_type, attr))
 
-<<<<<<< HEAD
     def _add_methods_to_eager_tensor(self):
       """
       Add required TensorFlowTensor methods to EagerTensor.
@@ -251,16 +264,6 @@ class TensorFlowHook(FrameworkHook):
 
       eager_type.__repr__ = TensorFlowTensor.__repr__
       eager_type.__str__ = TensorFlowTensor.__str__
-=======
-    @classmethod
-    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
-        if isinstance(child_to_wrap.object_type, tf.Variable):
-           return tf.Variable([])
-        #elif issubclass(child_to_wrap.object_type, tf.Module):
-        #    return tf.Module()
-        else:
-           return tf.constant([])
->>>>>>> send and get layers
 
     @classmethod
     def create_shape(cls, shape_dims):

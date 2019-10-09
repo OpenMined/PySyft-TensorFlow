@@ -13,7 +13,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.hook import hook_args
 
 
-class TensorFlowModule(AbstractTensor):
+class KerasLayer(AbstractTensor):
     """Add methods to this tensor to have them added to every tf.Tensor object.
 
     This tensor is simply a more convenient way to add custom functions to
@@ -230,7 +230,7 @@ class TensorFlowModule(AbstractTensor):
                 ptr_id = syft.ID_PROVIDER.pop()
 
         if object_type is None:
-            object_type = tf.Module
+            object_type = 'tf.keras.layers.Layer'
 
         ptr = syft.PointerTensor.create_pointer(
             self,
