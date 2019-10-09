@@ -32,7 +32,7 @@ class TensorFlowAttributes(FrameworkAttributes):
     ALIAS = "tensorflow"
     Tensor = TensorFlowTensor
 
-    def __init__(self, tensorflow: ModuleType, hook: ModuleType):
+    def __init__(self, tensorflow: ModuleType, hook: "TensorFlowHook"):
         super().__init__(tensorflow, hook)
         # Stash the hook here for global access elsewhere
         self.hook = hook
