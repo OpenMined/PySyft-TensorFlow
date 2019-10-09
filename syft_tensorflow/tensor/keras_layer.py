@@ -230,7 +230,7 @@ class KerasLayer(AbstractTensor):
                 ptr_id = syft.ID_PROVIDER.pop()
 
         if object_type is None:
-            object_type = 'tf.keras.layers.Layer'
+            object_type = tf.keras.layers.Layer
 
         ptr = syft.PointerTensor.create_pointer(
             self,
