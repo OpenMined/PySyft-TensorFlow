@@ -276,6 +276,8 @@ class TensorFlowHook(FrameworkHook):
         Args:
             tensor_type: the tensor_type which holds the methods
         """
+
+        # TODO [Yann] currently just hooking call, needs to hook all the method
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
             # if we haven't already overloaded this function
