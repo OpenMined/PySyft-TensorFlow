@@ -138,6 +138,74 @@ def _detail_tf_variable(worker, tensor_tuple) -> tf.Tensor:
     return tensor
 
 
+def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
+    """
+    This function converts a TF tensor into a serialized TF tensor using
+    tf.io. We do this because it's native to TF, and they've optimized it.
+
+    Args:
+      tensor (torch.Tensor): an input tensor to be serialized
+
+    Returns:
+      tuple: serialized tuple of TensorFlow tensor. The first value is the
+      id of the tensor and the second is the binary for the TensorFlow
+      object. The third is the tensor dtype and the fourth is the chain
+      of abstractions.
+    """
+
+    layer_ser = tf.keras.layers.serialize(layer)
+
+    layer_dict_ser = syft.serde.serde._simplify(
+        layer_ser)
+
+    chain = None
+    if hasattr(layer, "child"):
+        chain = syft.serde._simplify(layer.child)
+
+    return layer.id, layer_dict_ser, chain
+
+
+def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
+    """
+    This function converts a serialized tf tensor into a local TF tensor
+    using tf.io.
+
+    Args:
+        tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
+            the first value is the ID, the second vlaue is the binary for the
+            TensorFlow object, the third value is the tensor_dtype_enum, and
+            the fourth value is the chain of tensor abstractions
+
+    Returns:
+        tf.Tensor: a deserialized TF tensor
+    """
+
+    layer_id, layer_bin, chain = layer_tuple
+
+    layer_dict = syft.serde.serde._detail(
+        worker,
+        layer_bin)
+
+    layer = tf.keras.layers.deserialize(layer_dict)
+
+    initialize_tensor(
+        hook_self=syft.tensorflow.hook,
+        cls=layer,
+        is_tensor=True,
+        owner=worker,
+        id=layer_id,
+        init_args=[],
+        kwargs={},
+    )
+
+    if chain is not None:
+        chain = syft.serde._detail(worker, chain)
+        layer.child = chain
+        layer.is_wrapper = True
+
+    return layer
+
+
 def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
     """
     This function converts a TF tensor shape into a serialized list.
@@ -202,5 +270,6 @@ MAP_TF_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         tf.TensorShape: (_simplify_tf_tensorshape, _detail_tf_tensorshape),
         tf.Variable: (_simplify_tf_variable, _detail_tf_variable),
         ResourceVariable: (_simplify_tf_variable, _detail_tf_variable),
+        tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers)
     }
 )

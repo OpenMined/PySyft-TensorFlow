@@ -1,2 +1,3 @@
 from syft_tensorflow.tensor.tensor import TensorFlowTensor
 from syft_tensorflow.tensor.variable import TensorFlowVariable
+from syft_tensorflow.tensor.module import TensorFlowModule

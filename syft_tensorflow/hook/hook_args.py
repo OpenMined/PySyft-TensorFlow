@@ -40,6 +40,7 @@ forward_func = {
     tf.Variable: default_forward,
     ResourceVariable: default_forward,
     EagerTensor: default_forward,
+    tf.Module: default_forward,
 }
 backward_func = {
     tf.Tensor: lambda i: i.wrap(),
@@ -47,6 +48,7 @@ backward_func = {
     ResourceVariable: lambda i: i.wrap(),
     TensorFlowTensor: lambda i: i.wrap(),
     EagerTensor: lambda i: i.wrap(),
+    tf.Module: lambda i: i.wrap(),
 }
 ambiguous_methods = {"__getitem__", "__setitem__"}
 

@@ -13,6 +13,7 @@ from syft.generic.tensor import initialize_tensor
 from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
 from syft_tensorflow.tensor import TensorFlowVariable
+from syft_tensorflow.tensor import TensorFlowModule
 
 
 class TensorFlowHook(FrameworkHook):
@@ -61,16 +62,23 @@ class TensorFlowHook(FrameworkHook):
 
           tf.Variable: self._which_methods_should_we_auto_overload(
               tf.Variable
-          )
+          ),
+
+          tf.Module: self._which_methods_should_we_auto_overload(
+              tf.Module
+          ),
+
         }
 
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
         self._hook_native_tensor(tf.Variable, TensorFlowVariable)
+        self._hook_native_tensor(tf.Module, TensorFlowModule)
 
         self._hook_pointer_tensor_methods(Tensor)
         self._hook_pointer_tensor_methods(tf.Variable)
+        self._hook_pointer_tensor_methods(tf.Module)
 
         self._hook_tensorflow_module()
 
@@ -217,6 +225,7 @@ class TensorFlowHook(FrameworkHook):
                 # Add this method to the TF tensor
                 setattr(tensor_type, attr, getattr(syft_type, attr))
 
+<<<<<<< HEAD
     def _add_methods_to_eager_tensor(self):
       """
       Add required TensorFlowTensor methods to EagerTensor.
@@ -242,6 +251,16 @@ class TensorFlowHook(FrameworkHook):
 
       eager_type.__repr__ = TensorFlowTensor.__repr__
       eager_type.__str__ = TensorFlowTensor.__str__
+=======
+    @classmethod
+    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
+        if isinstance(child_to_wrap.object_type, tf.Variable):
+           return tf.Variable([])
+        #elif issubclass(child_to_wrap.object_type, tf.Module):
+        #    return tf.Module()
+        else:
+           return tf.constant([])
+>>>>>>> send and get layers
 
     @classmethod
     def create_shape(cls, shape_dims):
