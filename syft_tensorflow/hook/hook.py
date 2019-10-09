@@ -12,6 +12,7 @@ from syft.generic.tensor import initialize_tensor
 
 from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
+from syft_tensorflow.tensor import TensorFlowVariable
 
 
 class TensorFlowHook(FrameworkHook):
@@ -56,13 +57,20 @@ class TensorFlowHook(FrameworkHook):
         self.to_auto_overload = {
           Tensor: self._which_methods_should_we_auto_overload(
               Tensor
+          ),
+
+          tf.Variable: self._which_methods_should_we_auto_overload(
+              tf.Variable
           )
         }
 
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
+        self._hook_native_tensor(tf.Variable, TensorFlowVariable)
+
         self._hook_pointer_tensor_methods(Tensor)
+        self._hook_pointer_tensor_methods(tf.Variable)
 
         self._hook_tensorflow_module()
 
@@ -84,7 +92,7 @@ class TensorFlowHook(FrameworkHook):
                 Read more about it there.
         """
         # Reinitialize init method of Torch tensor with Syft init
-        self._add_registration_to___init__(tensor_type, is_tensor=True)
+        self._add_registration_to___init__(tensor_type)
 
         # Overload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
@@ -138,26 +146,22 @@ class TensorFlowHook(FrameworkHook):
                 specify whether to skip running the native initialization
                 logic. TODO: this flag might never get used.
         """
+
+        def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
+            cls.native___init__(*args, **kwargs)
+
+            if owner is None:
+              owner = hook_self.local_worker
+
+            if id is None:
+              id = syft.ID_PROVIDER.pop()
+
+            cls.id = id
+            cls.owner = owner
+            cls.is_wrapper = False
+
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
-
-        def new___init__(
-            cls,
-            *args,
-            owner=None,
-            id=None,
-            register=True,
-            **kwargs
-        ):
-
-            initialize_tensor(
-                hook_self=hook_self,
-                cls=cls,
-                id=id,
-                is_tensor=is_tensor,
-                init_args=args,
-                init_kwargs=kwargs,
-            )
 
         tensor_type.__init__ = new___init__
 
@@ -276,11 +280,14 @@ class TensorFlowHook(FrameworkHook):
                         getattr(tensor_type, attr)
                     )
                 # Add this method to the TF tensor
-                setattr(tensor_type, attr, getattr(TensorFlowTensor, attr))
+                setattr(tensor_type, attr, getattr(syft_type, attr))
 
     @classmethod
-    def create_wrapper(cls, child_to_wrap):
-        return tf.constant([])
+    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
+        if isinstance(child_to_wrap.object_type, tf.Variable):
+           return tf.Variable([])
+        else:
+           return tf.constant([])
 
     @classmethod
     def create_shape(cls, shape_dims):

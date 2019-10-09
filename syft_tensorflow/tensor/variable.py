@@ -13,7 +13,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.hook import hook_args
 
 
-class TensorFlowTensor(AbstractTensor):
+class TensorFlowVariable(AbstractTensor):
     """Add methods to this tensor to have them added to every tf.Tensor object.
 
     This tensor is simply a more convenient way to add custom functions to
@@ -212,7 +212,7 @@ class TensorFlowTensor(AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
-        object_type=None,
+        object_type: str = None,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -233,7 +233,7 @@ class TensorFlowTensor(AbstractTensor):
             shape = self.shape
 
         if object_type is None:
-            object_type = tf.Tensor
+            object_type = tf.Variable
 
         ptr = syft.PointerTensor.create_pointer(
             self,
