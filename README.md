@@ -41,3 +41,12 @@ print(z.get())
 ## Developing PySyft-TensorFlow
 
 See [CONTRIBUTING](./CONTRIBUTING.md).
+
+## Project Support
+
+PySyft-Tensorflow was contributed by and continues to be maintained by the team at [Dropout Labs](https://dropoutlabs.com).
+
+Please reach out to contact@dropoutlabs.com for support.
+
+[<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="200"/>](https://dropoutlabs.com/)
+|--------------------------------------------------------------|
