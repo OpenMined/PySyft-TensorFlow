@@ -204,7 +204,7 @@ class TensorFlowHook(FrameworkHook):
         """
         exclude = [
             "__class__",
-            "__delattr__",
+            #"__delattr__",
             "__dir__",
             "__doc__",
             "__dict__",
@@ -281,7 +281,7 @@ class TensorFlowHook(FrameworkHook):
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
             # if we haven't already overloaded this function
-            if (attr=='call') & (f"native_{attr}" not in dir(tensor_type)):
+            if (f"native_{attr}" not in dir(tensor_type)):
                 native_method = getattr(tensor_type, attr)
                 setattr(tensor_type, f"native_{attr}", native_method)
                 new_method = self._get_hooked_method(attr)
