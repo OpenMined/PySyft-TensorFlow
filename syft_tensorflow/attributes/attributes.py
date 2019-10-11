@@ -48,9 +48,7 @@ class TensorFlowAttributes(FrameworkAttributes):
         # Set of all function names with module as prefix in the modules to hook
         self._tensorflow_modules_functions = {
             f"{module_name}.{func_name}"
-            for module_name, tensorflow_module
-            in self.tensorflow_modules.items()
-
+            for module_name, tensorflow_module in self.tensorflow_modules.items()
             for func_name in dir(tensorflow_module)
         }
 
@@ -58,9 +56,7 @@ class TensorFlowAttributes(FrameworkAttributes):
         # stored in tensorflow_modules_functions
         self.eval_tensorflow_modules_functions = {
             f"{module_name}.{func_name}": getattr(tensorflow_module, func_name)
-            for module_name, tensorflow_module
-            in self.tensorflow_modules.items()
-
+            for module_name, tensorflow_module in self.tensorflow_modules.items()
             for func_name in dir(tensorflow_module)
         }
 
@@ -109,7 +105,6 @@ class TensorFlowAttributes(FrameworkAttributes):
         self.exclude = []
 
         self.inplace_methods = {}
-
 
     def is_inplace_method(self, method):
         # I've not yet encountered any inplace methods in TF

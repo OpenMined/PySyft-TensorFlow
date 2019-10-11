@@ -133,9 +133,7 @@ class TensorFlowVariable(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(
-              self.child, PointerTensor
-            ):
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
 
             ptr = self.owner.send(
@@ -162,7 +160,9 @@ class TensorFlowVariable(AbstractTensor):
                 self.child = ptr
                 return self
             else:
-                output = ptr if no_wrap else ptr.wrap(type=tf.Variable, initial_value=[])
+                output = (
+                    ptr if no_wrap else ptr.wrap(type=tf.Variable, initial_value=[])
+                )
 
         else:
 

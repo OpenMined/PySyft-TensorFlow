@@ -133,9 +133,7 @@ class TensorFlowTensor(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(
-              self.child, PointerTensor
-            ):
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
 
             ptr = self.owner.send(

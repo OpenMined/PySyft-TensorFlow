@@ -30,11 +30,13 @@ type_rule = {
     tf.keras.layers.Layer: one,
 }
 
-def default_forward(i):
-  if hasattr(i, "child"):
-    return i.child
 
-  return (_ for _ in ()).throw(PureFrameworkTensorFoundError)
+def default_forward(i):
+    if hasattr(i, "child"):
+        return i.child
+
+    return (_ for _ in ()).throw(PureFrameworkTensorFoundError)
+
 
 forward_func = {
     tf.Tensor: default_forward,

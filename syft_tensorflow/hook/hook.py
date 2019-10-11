@@ -9,7 +9,7 @@ import syft
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.generic.frameworks.hook.hook import FrameworkHook
-from syft.generic.tensor import initialize_tensor
+from syft.generic.object import initialize_object
 
 from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
@@ -19,10 +19,7 @@ from syft_tensorflow.tensor import KerasLayer
 
 class TensorFlowHook(FrameworkHook):
     def __init__(
-        self,
-        tensorflow,
-        local_worker: BaseWorker = None,
-        is_client: bool = True
+        self, tensorflow, local_worker: BaseWorker = None, is_client: bool = True
     ):
 
         self.tensorflow = tensorflow
@@ -57,18 +54,11 @@ class TensorFlowHook(FrameworkHook):
             self.local_worker.hook = self
 
         self.to_auto_overload = {
-          Tensor: self._which_methods_should_we_auto_overload(
-              Tensor
-          ),
-
-          tf.Variable: self._which_methods_should_we_auto_overload(
-              tf.Variable
-          ),
-
-          tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
-              tf.keras.layers.Layer
-          ),
-
+            Tensor: self._which_methods_should_we_auto_overload(Tensor),
+            tf.Variable: self._which_methods_should_we_auto_overload(tf.Variable),
+            tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
+                tf.keras.layers.Layer
+            ),
         }
 
         self.args_hook_for_overloaded_attr = {}
@@ -76,11 +66,11 @@ class TensorFlowHook(FrameworkHook):
         self._hook_native_tensor(Tensor, TensorFlowTensor)
         self._hook_native_tensor(tf.Variable, TensorFlowVariable)
 
-        self._hook_native_keras_objects(tf.keras.layers.Layer, KerasLayer)
+        self._hook_keras_objects(tf.keras.layers.Layer, KerasLayer)
 
         self._hook_pointer_tensor_methods(Tensor)
         self._hook_pointer_tensor_methods(tf.Variable)
-        self._hook_pointer_tensor_methods(tf.keras.layers.Layer)
+        self._hook_object_pointer_methods(tf.keras.layers.Layer)
 
         self._hook_tensorflow_module()
 
@@ -111,24 +101,66 @@ class TensorFlowHook(FrameworkHook):
         # Overload TensorFlow tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
-        # Overload auto overloaded with TensorFlow methods
-        self._add_methods_from_native_tensor(tensor_type, syft_type)
+        # Overload auto overloaded with Torch methods
+        exclude = [  # Overload auto overloaded with Torch methods
+            "__class__",
+            "__delattr__",
+            "__dir__",
+            "__doc__",
+            "__dict__",
+            "__format__",
+            "__getattribute__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__weakref__",
+            "__ne__",
+            "__new__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__setattr__",
+            "__sizeof__",
+            "__subclasshook__",
+            "__eq__",
+            "__gt__",
+            "__ge__",
+            "__lt__",
+            "__le__",
+        ]
+        self._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
 
         self._hook_native_methods(tensor_type)
 
-    def _hook_native_keras_objects(self, tensor_type: type, syft_type: type):
+    def _hook_keras_objects(self, layer_cls: type, from_cls: type):
 
         # Reinitialize init method of Torch tensor with Syft init
-        self._add_registration_to___init__(tensor_type)
+        self._add_registration_to___init__(layer_cls)
 
         # Overload Torch tensor properties with Syft properties
-        self._hook_properties(tensor_type)
+        self._hook_properties(layer_cls)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from_native_tensor(tensor_type, syft_type)
+        exclude = [
+            "__class__",
+            "__dir__",
+            "__doc__",
+            "__dict__",
+            "__format__",
+            "__getattribute__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__weakref__",
+            "__new__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__setattr__",
+            "__sizeof__",
+            "__subclasshook__",
+        ]
+        self._transfer_methods_to_framework_class(layer_cls, from_cls, exclude)
 
-        self._hook_layer_methods(tensor_type)
-
+        self._hook_layer_methods(layer_cls)
 
     def _hook_tensorflow_module(self):
         tensorflow_modules = syft.tensorflow.tensorflow_modules
@@ -175,71 +207,21 @@ class TensorFlowHook(FrameworkHook):
                 logic. TODO: this flag might never get used.
         """
 
-        def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-            cls.native___init__(*args, **kwargs)
-
-            if owner is None:
-              owner = hook_self.local_worker
-
-            if id is None:
-              id = syft.ID_PROVIDER.pop()
-
-            cls.id = id
-            cls.owner = owner
-            cls.is_wrapper = False
+        def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
+            return initialize_object(
+                hook=hook_self,
+                obj=self,
+                reinitialize=not is_tensor,
+                owner=owner,
+                id=id,
+                init_args=args,
+                init_kwargs=kwargs,
+            )
 
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
 
         tensor_type.__init__ = new___init__
-
-    @staticmethod
-    def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
-        """Adds methods from the TensorFlowTensor class to the native TensorFlow tensor.
-         The class TensorFlowTensor is a proxy to avoid extending directly the TensorFlow
-        tensor class.
-         Args:
-            tensor_type: The tensor type to which we are adding methods
-                from TensorFlowTensor class.
-        """
-        exclude = [
-            "__class__",
-            #"__delattr__",
-            "__dir__",
-            "__doc__",
-            "__dict__",
-            "__format__",
-            "__getattribute__",
-            "__hash__",
-            "__init__",
-            "__init_subclass__",
-            "__weakref__",
-            "__ne__",
-            "__new__",
-            "__reduce__",
-            "__reduce_ex__",
-            "__setattr__",
-            "__sizeof__",
-            "__subclasshook__",
-            # "__eq__", # FIXME see PySyft
-            "__gt__",
-            "__ge__",
-            "__lt__",
-            "__le__",
-        ]
-        # For all methods defined in tf.Tensor or TensorFlowTensor
-        # that are not internal methods (like __class__etc)
-        for attr in dir(syft_type):
-            if attr not in exclude:
-                # Alias `attr` method as `native_attr` if it already exists
-                if hasattr(tensor_type, attr):
-                    setattr(
-                        tensor_type,
-                        f"native_{attr}",
-                        getattr(tensor_type, attr)
-                    )
-                # Add this method to the TF tensor
-                setattr(tensor_type, attr, getattr(syft_type, attr))
 
     def _add_methods_to_eager_tensor(self):
       """
@@ -281,7 +263,7 @@ class TensorFlowHook(FrameworkHook):
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
             # if we haven't already overloaded this function
-            if (f"native_{attr}" not in dir(tensor_type)):
+            if f"native_{attr}" not in dir(tensor_type):
                 native_method = getattr(tensor_type, attr)
                 setattr(tensor_type, f"native_{attr}", native_method)
                 new_method = self._get_hooked_method(attr)

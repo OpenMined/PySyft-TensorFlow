@@ -3,17 +3,16 @@ import weakref
 import tensorflow as tf
 
 import syft
-from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.object import AbstractObject
+from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.base import BaseWorker
-from syft.generic.pointers.pointer_tensor import PointerTensor
 
 from syft.exceptions import PureFrameworkTensorFoundError
-from syft.generic.frameworks.types import FrameworkTensor
-
-from syft.generic.frameworks.hook import hook_args
 
 
-class KerasLayer(AbstractTensor):
+class KerasLayer(AbstractObject):
     """Add methods to this tensor to have them added to every tf.Tensor object.
 
     This tensor is simply a more convenient way to add custom functions to
@@ -81,21 +80,8 @@ class KerasLayer(AbstractTensor):
         else:
             self._description = new_desc
 
-    @property
-    def shape(self):
-        if self.is_wrapper:
-            return self.child.shape
-        else:
-            return self.native_shape
-
     def send(
-        self,
-        *location,
-        inplace: bool = False,
-        # local_autograd=False,
-        # preinitialize_grad=False,
-        no_wrap=False,
-        garbage_collect_data=True,
+        self, *location, inplace: bool = False, no_wrap=False, garbage_collect_data=True
     ):
         """Gets the pointer to a new remote object.
 
@@ -110,10 +96,6 @@ class KerasLayer(AbstractTensor):
                 a class which instantiates the BaseWorker abstraction.
             inplace: if true,
               return the same object instance, else a new wrapper
-            # local_autograd: Use autograd system on the local machine instead
-              of PyTorch's autograd on the workers.
-            # preinitialize_grad: Initialize gradient for AutogradTensors
-              to a tensor
             no_wrap: If True, wrap() is called on the created pointer
             garbage_collect_data: argument passed down to create_pointer()
 
@@ -133,9 +115,7 @@ class KerasLayer(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(
-              self.child, PointerTensor
-            ):
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
 
             ptr = self.owner.send(
@@ -211,9 +191,7 @@ class KerasLayer(AbstractTensor):
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
-        shape=None,
-        object_type: str = None,
-    ) -> PointerTensor:
+    ) -> ObjectPointer:
         """Creates a pointer to the "self" torch.Tensor object.
 
         Returns:
@@ -229,10 +207,7 @@ class KerasLayer(AbstractTensor):
             else:
                 ptr_id = syft.ID_PROVIDER.pop()
 
-        if object_type is None:
-            object_type = tf.keras.layers.Layer
-
-        ptr = syft.PointerTensor.create_pointer(
+        ptr = ObjectPointer.create_pointer(
             self,
             location,
             id_at_location,
@@ -240,8 +215,6 @@ class KerasLayer(AbstractTensor):
             owner,
             ptr_id,
             garbage_collect_data,
-            shape,
-            object_type=object_type,
         )
 
         return ptr

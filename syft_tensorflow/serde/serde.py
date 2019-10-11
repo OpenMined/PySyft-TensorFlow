@@ -1,12 +1,14 @@
 from collections import OrderedDict
+import h5py
+import io
+from tempfile import TemporaryDirectory
 
+import syft
+from syft.generic.object import initialize_object
+from syft.generic.tensor import initialize_tensor
 import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
-
-import syft
-
-from syft.generic.tensor import initialize_tensor
 
 
 def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
@@ -56,13 +58,12 @@ def _detail_tf_tensor(worker, tensor_tuple) -> tf.Tensor:
     tensor = tf.io.parse_tensor(tensor_bin, tensor_dtype)
 
     initialize_tensor(
-        hook_self=syft.tensorflow.hook,
-        cls=tensor,
-        is_tensor=True,
+        hook=syft.tensorflow.hook,
+        obj=tensor,
         owner=worker,
         id=tensor_id,
         init_args=[],
-        kwargs={},
+        init_kwargs={},
     )
 
     if chain is not None:
@@ -121,13 +122,12 @@ def _detail_tf_variable(worker, tensor_tuple) -> tf.Tensor:
     tensor = tf.Variable(tensor)
 
     initialize_tensor(
-        hook_self=syft.tensorflow.hook,
-        cls=tensor,
-        is_tensor=True,
+        hook=syft.tensorflow.hook,
+        obj=tensor,
         owner=worker,
         id=tensor_id,
         init_args=[],
-        kwargs={},
+        init_kwargs={},
     )
 
     if chain is not None:
@@ -140,7 +140,7 @@ def _detail_tf_variable(worker, tensor_tuple) -> tf.Tensor:
 
 def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
     """
-    This function converts a TF tensor into a serialized TF tensor using
+    This function converts a keras layer into a serialized keras layer using
     tf.io. We do this because it's native to TF, and they've optimized it.
 
     Args:
@@ -156,14 +156,13 @@ def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
     layer_ser = tf.keras.layers.serialize(layer)
 
     weights = layer.get_weights()
-    weights_ser = syft.serde.serde._simplify(
-        weights)
+    weights_ser = syft.serde.serde._simplify(weights)
 
-    layer_dict_ser = syft.serde.serde._simplify(
-        layer_ser)
+    layer_dict_ser = syft.serde.serde._simplify(layer_ser)
 
     batch_input_shape_ser = syft.serde.serde._simplify(
-        layer_ser['config']['batch_input_shape'])
+        layer_ser["config"]["batch_input_shape"]
+    )
 
     chain = None
     if hasattr(layer, "child"):
@@ -189,32 +188,26 @@ def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
 
     layer_id, layer_bin, weights_bin, batch_input_shape_bin, chain = layer_tuple
 
-    layer_dict = syft.serde.serde._detail(
-        worker,
-        layer_bin)
+    layer_dict = syft.serde.serde._detail(worker, layer_bin)
 
     layer = tf.keras.layers.deserialize(layer_dict)
 
-    weights = syft.serde.serde._detail(
-        worker,
-        weights_bin)
+    weights = syft.serde.serde._detail(worker, weights_bin)
 
-    batch_input_shape = syft.serde.serde._detail(
-        worker,
-        batch_input_shape_bin)
+    batch_input_shape = syft.serde.serde._detail(worker, batch_input_shape_bin)
 
     layer.build(batch_input_shape)
 
     layer.set_weights(weights)
 
-    initialize_tensor(
-        hook_self=syft.tensorflow.hook,
-        cls=layer,
-        is_tensor=True,
+    initialize_object(
+        hook=syft.tensorflow.hook,
+        obj=layer,
         owner=worker,
+        reinitialize=False,
         id=layer_id,
         init_args=[],
-        kwargs={},
+        init_kwargs={},
     )
 
     if chain is not None:
@@ -223,6 +216,36 @@ def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
         layer.is_wrapper = True
 
     return layer
+
+
+def _simplify_keras_model(model: tf.keras.Model):
+    bio = io.BytesIO()
+
+    with h5py.File(bio) as file:
+        tf.keras.models.save_model(model, file, include_optimizer=False, overwrite=True)
+
+    model_ser = bio.getvalue()
+
+    return model_ser, model.id
+
+
+def _detail_keras_model(worker, model_tuple):
+    model_ser, model_id = model_tuple
+    bio = io.BytesIO(model_ser)
+    with h5py.File(bio) as file:
+        model = tf.keras.models.load_model(file)
+
+    initialize_object(
+        hook=syft.tensorflow.hook,
+        obj=model,
+        owner=worker,
+        reinitialize=False,
+        id=model_id,
+        init_args=[],
+        init_kwargs={},
+    )
+
+    return model
 
 
 def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
@@ -238,8 +261,7 @@ def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
       chain of abstractions.
     """
 
-    tensorshape_list_ser = syft.serde.serde._simplify(
-        tensorshape.as_list())
+    tensorshape_list_ser = syft.serde.serde._simplify(tensorshape.as_list())
 
     # TODO[Yann] currently this condition is never true,
     # tf.TensorShape needs to be hooked
@@ -266,9 +288,7 @@ def _detail_tf_tensorshape(worker, tensor_tuple) -> tf.TensorShape:
 
     tensorshape_list_bin, chain = tensor_tuple
 
-    tensorshape_list = syft.serde.serde._detail(
-        worker,
-        tensorshape_list_bin)
+    tensorshape_list = syft.serde.serde._detail(worker, tensorshape_list_bin)
 
     tensorshape = tf.TensorShape(tensorshape_list)
 
@@ -288,6 +308,11 @@ MAP_TF_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         tf.Tensor: (_simplify_tf_tensor, _detail_tf_tensor),
         tf.TensorShape: (_simplify_tf_tensorshape, _detail_tf_tensorshape),
         tf.Variable: (_simplify_tf_variable, _detail_tf_variable),
+<<<<<<< HEAD
+=======
+        tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers),
+        tf.keras.models.Model: (_simplify_keras_model, _detail_keras_model),
+>>>>>>> big spaghetti
         ResourceVariable: (_simplify_tf_variable, _detail_tf_variable),
         tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers)
     }
