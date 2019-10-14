@@ -26,6 +26,9 @@ class KerasObject(AbstractObject):
     checking AbstractObject.
     """
 
+    def has_child(self):
+        return hasattr(self, "child")
+        
     def describe(self, description):
         self.description = description
         return self
@@ -197,7 +200,13 @@ class KerasObject(AbstractObject):
         return self.native___str__()
 
     def __repr__(self) -> str:
-        out = self.native___repr__()
+        if self.has_child():
+            if self.is_wrapper:
+                return "(Wrapper)>" + self.child.__str__()
+            else:
+                return type(self).__name__ + ">" + self.child.__repr__()
+        else:
+            out = self.native___repr__()
 
         big_repr = False
 

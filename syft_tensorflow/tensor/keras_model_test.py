@@ -30,3 +30,26 @@ def test_keras_sequential(remote):
     actual = model_ptr(x_ptr).get()
 
     assert np.array_equal(actual, expected)
+
+
+def test_keras_model_compile(remote):
+
+    model_to_give = tf.keras.models.Sequential([
+                    tf.keras.layers.Dense(5, input_shape=[2])
+    ])
+
+    model_ptr = model_to_give.send(remote)
+
+    model_ptr.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+    model_on_worker = remote._objects[model_ptr.id_at_location]
+
+    assert model_on_worker.loss == 'categorical_crossentropy'
+    assert isinstance(model_on_worker.optimizer,
+            tf.keras.optimizers.Adam)
+
+
+
+
