@@ -12,7 +12,8 @@ def test_send_get_keras_layer(remote):
     layer_ptr = layer_to_give.send(remote)
     layer_gotten = layer_ptr.get()
 
-    np.array_equal(layer_to_give.get_weights()[0], layer_gotten.get_weights()[0])
+    assert np.array_equal(layer_to_give.get_weights()[0], 
+                layer_gotten.get_weights()[0])
 
 
 def test_keras_dense_layer(remote):
@@ -24,6 +25,6 @@ def test_keras_dense_layer(remote):
 
     x_ptr = x_to_give.send(remote)
     layer_ptr = layer_to_give.send(remote)
-    actual = layer_ptr(x_ptr)
-
-    np.array_equal(actual, expected)
+    actual = layer_ptr(x_ptr).get()
+   
+    assert np.array_equal(actual, expected)

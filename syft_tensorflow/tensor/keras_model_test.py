@@ -13,7 +13,8 @@ def test_send_get_keras_model(remote):
     model_ptr = model_to_give.send(remote)
     model_gotten = model_ptr.get()
 
-    np.array_equal(model_to_give.get_weights()[0], model_gotten.get_weights()[0])
+    assert np.array_equal(model_to_give.get_weights()[0],
+                model_gotten.get_weights()[0])
 
 
 def test_keras_sequential(remote):
@@ -25,7 +26,7 @@ def test_keras_sequential(remote):
     expected = model_to_give(x_to_give)
 
     x_ptr = x_to_give.send(remote)
-    layer_ptr = model_to_give.send(remote)
-    actual = layer_ptr(x_ptr)
+    model_ptr = model_to_give.send(remote)
+    actual = model_ptr(x_ptr).get()
 
-    np.array_equal(actual, expected)
+    assert np.array_equal(actual, expected)
