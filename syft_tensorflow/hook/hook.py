@@ -15,6 +15,7 @@ from syft_tensorflow.attributes import TensorFlowAttributes
 from syft_tensorflow.tensor import TensorFlowTensor
 from syft_tensorflow.tensor import TensorFlowVariable
 from syft_tensorflow.tensor import KerasLayer
+from syft_tensorflow.tensor import KerasModel
 
 
 class TensorFlowHook(FrameworkHook):
@@ -59,6 +60,9 @@ class TensorFlowHook(FrameworkHook):
             tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
                 tf.keras.layers.Layer
             ),
+            tf.keras.models.Model: self._which_methods_should_we_auto_overload(
+                tf.keras.models.Model
+            ),
         }
 
         self.args_hook_for_overloaded_attr = {}
@@ -66,11 +70,13 @@ class TensorFlowHook(FrameworkHook):
         self._hook_native_tensor(Tensor, TensorFlowTensor)
         self._hook_native_tensor(tf.Variable, TensorFlowVariable)
 
-        self._hook_keras_objects(tf.keras.layers.Layer, KerasLayer)
+        self._hook_keras_layers(tf.keras.layers.Layer, KerasLayer)
+        self._hook_keras_model(tf.keras.models.Model, KerasModel)
 
         self._hook_pointer_tensor_methods(Tensor)
         self._hook_pointer_tensor_methods(tf.Variable)
         self._hook_object_pointer_methods(tf.keras.layers.Layer)
+        self._hook_object_pointer_methods(tf.keras.models.Model)
 
         self._hook_tensorflow_module()
 
@@ -131,15 +137,15 @@ class TensorFlowHook(FrameworkHook):
 
         self._hook_native_methods(tensor_type)
 
-    def _hook_keras_objects(self, layer_cls: type, from_cls: type):
+    def _hook_keras_layers(self, layer_cls: type, from_cls: type):
 
-        # Reinitialize init method of Torch tensor with Syft init
+        # Reinitialize init method of the Keras object with Syft init
         self._add_registration_to___init__(layer_cls)
 
-        # Overload Torch tensor properties with Syft properties
+        # Overload Keras object properties with Syft properties
         self._hook_properties(layer_cls)
 
-        # Overload auto overloaded with Torch methods
+        # Overload auto overloaded with Keras methods
         exclude = [
             "__class__",
             "__dir__",
@@ -160,7 +166,35 @@ class TensorFlowHook(FrameworkHook):
         ]
         self._transfer_methods_to_framework_class(layer_cls, from_cls, exclude)
 
-        self._hook_layer_methods(layer_cls)
+        self._hook_keras_methods(layer_cls)
+
+    def _hook_keras_model(self, model_cls: type, from_cls: type):
+
+        # Overload the Keras object properties with Syft properties
+        self._hook_properties(model_cls)
+
+        # Overload auto overloaded with Keras methods
+        exclude = [
+            "__class__",
+            "__dir__",
+            "__doc__",
+            "__dict__",
+            "__format__",
+            "__getattribute__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__weakref__",
+            "__new__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__setattr__",
+            "__sizeof__",
+            "__subclasshook__",
+        ]
+        self._transfer_methods_to_framework_class(model_cls, from_cls, exclude)
+
+        self._hook_keras_methods(model_cls)
 
     def _hook_tensorflow_module(self):
         tensorflow_modules = syft.tensorflow.tensorflow_modules
@@ -249,25 +283,23 @@ class TensorFlowHook(FrameworkHook):
       eager_type.__repr__ = TensorFlowTensor.__repr__
       eager_type.__str__ = TensorFlowTensor.__str__
 
-    def _hook_layer_methods(self, tensor_type: type):
+    def _hook_keras_methods(self, keras_type: type):
         """
-        Add hooked version of all methods of to_auto_overload[tensor_type]
-        to the tensor_type; instead of performing the native tensor
+        Add hooked version of all methods of to_auto_overload[keras_type]
+        to the keras_type; instead of performing the native keras object
         method, the hooked version will be called
 
         Args:
-            tensor_type: the tensor_type which holds the methods
+            keras_type: the keras_type which holds the methods
         """
 
-        # TODO [Yann] currently just hooking call, needs to hook all the method
-        # Use a pre-defined list to select the methods to overload
-        for attr in self.to_auto_overload[tensor_type]:
+        for attr in self.to_auto_overload[keras_type]:
             # if we haven't already overloaded this function
-            if f"native_{attr}" not in dir(tensor_type):
-                native_method = getattr(tensor_type, attr)
-                setattr(tensor_type, f"native_{attr}", native_method)
+            if f"native_{attr}" not in dir(keras_type):
+                native_method = getattr(keras_type, attr)
+                setattr(keras_type, f"native_{attr}", native_method)
                 new_method = self._get_hooked_method(attr)
-                setattr(tensor_type, attr, new_method)
+                setattr(keras_type, attr, new_method)
 
     @classmethod
     def create_shape(cls, shape_dims):
