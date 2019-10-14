@@ -8,16 +8,18 @@ from syft.generic.object import AbstractObject
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.base import BaseWorker
 
+from syft_tensorflow.tensor import KerasObject
+
 from syft.exceptions import PureFrameworkTensorFoundError
 
 
-class KerasModel(AbstractObject):
-    """Add methods to this keras layer object to have them added to every 
-    tf.keras.layers.Layer object.
+class KerasModel(KerasObject):
+    """Add methods to this keras model object to have them added to every 
+    tf.keras.models.Model object.
 
     This Keras object is simply a more convenient way to add custom functions to
     all TensorFlow Keras object types. When you add a function to this keras object,
-    it will be added to EVERY native Keras layer type (i.e. tf.keras.layers.Dense)
+    it will be added to EVERY native Keras layer type (i.e. tf.keras.models.Sequential)
     automatically by the TensorFlowHook.
 
     Note: all methods from AbstractObject will also be included because this
@@ -25,42 +27,6 @@ class KerasModel(AbstractObject):
     the native tf.keras API but it's not listed here, you might try
     checking AbstractObject.
     """
-
-    def describe(self, description):
-        self.description = description
-        return self
-
-    def tag(self, *_tags):
-        if self.tags is None:
-            tags = list()
-        else:
-            tags = list(self.tags)
-
-        for new_tag in _tags:
-            tags.append(new_tag)
-
-        self.tags = set(tags)
-        return self
-
-    @property
-    def tags(self):
-        if not hasattr(self, "_tags"):
-            self._tags = None
-        return self._tags
-
-    @tags.setter
-    def tags(self, new_tags):
-        self._tags = new_tags
-
-    @property
-    def description(self):
-        if not hasattr(self, "_description"):
-            self._description = None
-        return self._description
-
-    @description.setter
-    def description(self, new_desc):
-        self._description = new_desc
 
     def send(
         self, *location, inplace: bool = False, no_wrap=False, garbage_collect_data=True
@@ -136,108 +102,3 @@ class KerasModel(AbstractObject):
                 output = output.wrap(type=tf.keras.models.Model)
 
         return output
-
-    def get(self, *args, inplace: bool = False, **kwargs):
-        """Requests the Keras object being pointed to, be serialized and return
-            Args:
-                args: args to forward to worker
-                inplace: if true, return the same object instance,
-                  else a new wrapper
-                kwargs: kwargs to forward to worker
-            Raises:
-                GetNotPermittedError: Raised if
-                  get is not permitted on this Keras object
-        """
-        # Transfer the get() to the child attribute which is a pointer
-
-        obj = self.child.get(*args, **kwargs)
-
-        if inplace:
-            return self
-        else:
-            return obj
-
-    def create_pointer(
-        self,
-        location: BaseWorker = None,
-        id_at_location: (str or int) = None,
-        register: bool = False,
-        owner: BaseWorker = None,
-        ptr_id: (str or int) = None,
-        garbage_collect_data: bool = True,
-    ) -> ObjectPointer:
-        """Creates a pointer to the "self" tf.keras.layers.Layer object.
-
-        Returns:
-            A ObjectPointer pointer to self. Note that this
-            object will likely be wrapped by a tf.keras.layers.Layer wrapper.
-        """
-        if id_at_location is None:
-            id_at_location = self.id
-
-        if ptr_id is None:
-            if location is not None and location.id != self.owner.id:
-                ptr_id = self.id
-            else:
-                ptr_id = syft.ID_PROVIDER.pop()
-
-        ptr = ObjectPointer.create_pointer(
-            self,
-            location,
-            id_at_location,
-            register,
-            owner,
-            ptr_id,
-            garbage_collect_data,
-        )
-
-        return ptr
-
-    def __str__(self) -> str:
-        return self.native___str__()
-
-    def __repr__(self) -> str:
-        out = self.native___repr__()
-
-        big_repr = False
-
-        if self.tags is not None and len(self.tags):
-            big_repr = True
-            out += "\n\tTags: "
-            for tag in self.tags:
-                out += str(tag) + " "
-
-        if self.description is not None:
-            big_repr = True
-            out += (
-                "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
-            )
-
-        return out
-
-    @classmethod
-    def handle_func_command(cls, command):
-        """
-        Instantiate the native Keras object.
-
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
-        :return: the response of the function command
-        """
-        cmd, _, args, kwargs = command
-
-        # TODO: clean this line
-        cmd_split = cmd.split(".")
-        cmd_path = cmd_split[:-1]
-        cmd_name = cmd_split[-1]
-        cmd = "syft.local_worker.hook." + ".".join(cmd_path) + ".native_" + cmd_name
-
-        # Run the native function with the new args
-        # Note the the cmd should already be checked upon reception by the worker
-        # in the execute_command function
-        if isinstance(args, tuple):
-            response = eval(cmd)(*args, **kwargs)
-        else:
-            response = eval(cmd)(args, **kwargs)
-
-        return response
