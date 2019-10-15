@@ -51,5 +51,33 @@ def test_keras_model_compile(remote):
             tf.keras.optimizers.Adam)
 
 
+def test_keras_model_fit(remote):
+
+    x_to_give = tf.random.uniform([2, 2], seed=1)
+    y_to_give = tf.ones([2, 1])
+
+    k_init = tf.keras.initializers.RandomNormal(seed=1)
+
+    model_to_give = tf.keras.models.Sequential([
+                    tf.keras.layers.Dense(5, 
+                                          input_shape=[2],
+                                          kernel_initializer=k_init)
+    ])
+
+    model_to_give.compile(optimizer='adam',
+                          loss='categorical_crossentropy',
+                          metrics=['accuracy'])
+    
+
+    model_ptr = model_to_give.send(remote)
+    x_ptr = x_to_give.send(remote)
+    y_ptr = y_to_give.send(remote)
+
+    history_cb = model_ptr.fit(x_ptr, y_ptr, epochs=1)
+    final_loss = history_cb.history['loss'][0]
+
+    np.testing.assert_almost_equal(final_loss, 34.6580, decimal=4)
+
+
 
 
