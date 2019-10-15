@@ -47,23 +47,38 @@ class KerasObject(AbstractObject):
 
     @property
     def tags(self):
-        if not hasattr(self, "_tags"):
-            self._tags = None
-        return self._tags
+        if self.has_child():
+            return self.child.tags
+        else:
+            if not hasattr(self, "_tags"):
+                self._tags = None
+            return self._tags
 
     @tags.setter
     def tags(self, new_tags):
-        self._tags = new_tags
+        if self.has_child():
+            if new_tags is not None:
+                self.child.tags = set(new_tags)
+            else:
+                self.child.tags = set()
+        else:
+            self._tags = new_tags
 
     @property
     def description(self):
-        if not hasattr(self, "_description"):
-            self._description = None
-        return self._description
+        if self.has_child():
+            return self.child.description
+        else:
+            if not hasattr(self, "_description"):
+                self._description = None
+            return self._description
 
     @description.setter
     def description(self, new_desc):
-        self._description = new_desc
+        if self.has_child():
+            self.child.description = new_desc
+        else:
+            self._description = new_desc
 
     def send(
         self, *location, inplace: bool = False, no_wrap=False, garbage_collect_data=True
@@ -197,7 +212,13 @@ class KerasObject(AbstractObject):
         return ptr
 
     def __str__(self) -> str:
-        return self.native___str__()
+        if self.has_child():
+            if self.is_wrapper:
+                return "(Wrapper)>" + self.child.__str__()
+            else:
+                return type(self).__name__ + ">" + self.child.__str__()
+        else:
+            return self.native___str__()
 
     def __repr__(self) -> str:
         if self.has_child():
