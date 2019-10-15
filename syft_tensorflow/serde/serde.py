@@ -222,7 +222,7 @@ def _simplify_keras_model(model: tf.keras.Model):
     bio = io.BytesIO()
 
     with h5py.File(bio) as file:
-        tf.keras.models.save_model(model, file, include_optimizer=False, overwrite=True)
+        tf.keras.models.save_model(model, file, include_optimizer=True, overwrite=True)
 
     model_ser = bio.getvalue()
 
