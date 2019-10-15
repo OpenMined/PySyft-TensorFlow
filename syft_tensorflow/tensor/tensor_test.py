@@ -8,7 +8,15 @@ def test_send_get_constant(remote):
     x_to_give = tf.constant(2.0)
     x_ptr = x_to_give.send(remote)
     x_gotten = x_ptr.get()
+    
     assert tf.math.equal(x_to_give, x_gotten)
+
+def test_constant_with_numpy(remote):
+  x_to_give = tf.constant(np.ones([2,2]))
+  x_ptr = x_to_give.send(remote)
+  x_gotten = x_ptr.get()
+
+  assert tf.math.equal(x_to_give, x_gotten).numpy().all()
 
 def test_add(remote):
   x = tf.constant(2.0).send(remote)
