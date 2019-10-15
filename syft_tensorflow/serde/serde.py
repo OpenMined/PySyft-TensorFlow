@@ -10,6 +10,8 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
+from syft_tensorflow.serde.serde_utils import history_numpy_to_float
+
 
 def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
     """
@@ -248,6 +250,61 @@ def _detail_keras_model(worker, model_tuple):
     return model
 
 
+def _simplify_keras_history_callback(
+        history_cb: tf.keras.callbacks.History
+    ) -> bin:
+    """
+    This function converts history callback into serialized dictionaries.
+
+    Args:
+      history_cb (tf.keras.callbacks.History): history callback
+
+    Returns:
+      tuple: serialized tuple of history callback. The first value is
+      the binary of the params dictionary. The second is the binary 
+      of the history dictionary.
+    """
+
+    params = history_cb.params
+    # serde can't serialize numpy values. These values need
+    # to be converted to floats first
+    history = history_numpy_to_float(history_cb.history)
+
+    params_ser = syft.serde.serde._simplify(params)
+    history_ser = syft.serde.serde._simplify(history)
+
+    return params_ser, history_ser
+
+
+def _detail_keras_history_callback(
+        worker, 
+        history_cb_tuple
+    ) -> tf.keras.callbacks.History:
+    """
+    This function converts a serialized history callback into an 
+    history callback.
+
+    Args:
+        history_cb_tuple (bin): serialized obj of history callback.
+        It's a tuple where the first value is the binary of the params 
+        dictionary. The second is the binary of the history dictionary.
+
+    Returns:
+        tf.keras.callbacks.History: a deserialized history callback
+    """
+
+    params_bin, history_bin = history_cb_tuple
+
+    params = syft.serde.serde._detail(worker, params_bin)
+    history = syft.serde.serde._detail(worker, history_bin)
+
+    history_cb = tf.keras.callbacks.History()
+    history_cb.set_params(params)
+    history_cb.history = history
+
+    return history_cb
+
+
 def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
     """
     This function converts a TF tensor shape into a serialized list.
@@ -308,12 +365,10 @@ MAP_TF_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         tf.Tensor: (_simplify_tf_tensor, _detail_tf_tensor),
         tf.TensorShape: (_simplify_tf_tensorshape, _detail_tf_tensorshape),
         tf.Variable: (_simplify_tf_variable, _detail_tf_variable),
-<<<<<<< HEAD
-=======
         tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers),
         tf.keras.models.Model: (_simplify_keras_model, _detail_keras_model),
->>>>>>> big spaghetti
         ResourceVariable: (_simplify_tf_variable, _detail_tf_variable),
-        tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers)
+        tf.keras.callbacks.History: (_simplify_keras_history_callback,  
+                                     _detail_keras_history_callback)
     }
 )
