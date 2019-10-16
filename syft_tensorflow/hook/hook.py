@@ -105,7 +105,7 @@ class TensorFlowHook(FrameworkHook):
         self._add_registration_to___init__(tensor_type)
 
         # Overload TensorFlow tensor properties with Syft properties
-        self._hook_properties(tensor_type)
+        self._hook_tensor_properties(tensor_type)
 
         # Overload auto overloaded with Torch methods
         exclude = [  # Overload auto overloaded with Torch methods
@@ -143,7 +143,7 @@ class TensorFlowHook(FrameworkHook):
         self._add_registration_to___init__(layer_cls)
 
         # Overload Keras object properties with Syft properties
-        self._hook_properties(layer_cls)
+        self._hook_keras_properties(layer_cls)
 
         # Overload auto overloaded with Keras methods
         exclude = [
@@ -171,7 +171,7 @@ class TensorFlowHook(FrameworkHook):
     def _hook_keras_model(self, model_cls: type, from_cls: type):
 
         # Overload the Keras object properties with Syft properties
-        self._hook_properties(model_cls)
+        self._hook_keras_properties(model_cls)
 
         # Overload auto overloaded with Keras methods
         exclude = [
@@ -256,6 +256,13 @@ class TensorFlowHook(FrameworkHook):
             tensor_type.native___init__ = tensor_type.__init__
 
         tensor_type.__init__ = new___init__
+
+    def _hook_keras_properties(hook_self, keras_type: type):
+        super()._hook_properties(keras_type)
+
+    def _hook_tensor_properties(hook_self, tensor_type: type):
+        super()._hook_properties(tensor_type)
+        tensor_type.native_shape = tensor_type.shape
 
     def _add_methods_to_eager_tensor(self):
       """

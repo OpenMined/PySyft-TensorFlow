@@ -210,7 +210,6 @@ class TensorFlowTensor(AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
-        object_type=None,
     ) -> PointerTensor:
         """Creates a pointer to the "self" tf.Tensor object.
 
@@ -230,9 +229,6 @@ class TensorFlowTensor(AbstractTensor):
         if shape is None:
             shape = self.shape
 
-        if object_type is None:
-            object_type = tf.Tensor
-
         ptr = syft.PointerTensor.create_pointer(
             self,
             location,
@@ -242,7 +238,6 @@ class TensorFlowTensor(AbstractTensor):
             ptr_id,
             garbage_collect_data,
             shape,
-            object_type=object_type,
         )
 
         return ptr

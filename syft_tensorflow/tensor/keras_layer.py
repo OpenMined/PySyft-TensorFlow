@@ -86,7 +86,7 @@ class KerasLayer(KerasObject):
                 self.child = ptr
                 return self
             else:
-                output = ptr if no_wrap else ptr.wrap()
+                output = ptr if no_wrap else ptr.wrap(type=tf.keras.layers.Layer)
 
         else:
 
@@ -99,6 +99,6 @@ class KerasLayer(KerasObject):
             output = syft.MultiPointerTensor(children=children)
 
             if not no_wrap:
-                output = output.wrap()
+                output = output.wrap(type=tf.keras.layers.Layer)
 
         return output
