@@ -42,9 +42,9 @@ class TensorFlowHook(FrameworkHook):
             tensorflow.tf_hooked = True
 
         if self.local_worker is None:
-            # Every TorchHook instance should have a local worker which is
+            # Every TensorFlowHook instance should have a local worker which is
             # responsible for interfacing with other workers. The worker
-            # interface is what allows the Torch specific code in TorchHook to
+            # interface is what allows the TensorFlow specific code in TensorFlowHook to
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
@@ -83,25 +83,25 @@ class TensorFlowHook(FrameworkHook):
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
-         Overloads the given native Torch tensor to add PySyft Tensor
+         Overloads the given native TensorFlow tensor to add PySyft Tensor
         Functionality. Overloading involves modifying the tensor type with
         PySyft's added functionality. You may read about what kind of
         modifications are made in the methods that this method calls.
          Args:
             tensor_type: The type of tensor being hooked (in this refactor
-                this is only ever torch.Tensor, but in previous versions of
+                this is only ever tf.Tensor, but in previous versions of
                 PySyft this iterated over all tensor types.
             syft_type: The abstract type whose methods should all be added to
-                the tensor_type class. In practice this is always TorchTensor.
+                the tensor_type class. In practice this is always TensorFlowTensor.
                 Read more about it there.
         """
-        # Reinitialize init method of Torch tensor with Syft init
+        # Reinitialize init method of TensorFlow tensor with Syft init
         self._add_registration_to___init__(tensor_type)
 
-        # Overload Torch tensor properties with Syft properties
+        # Overload TensorFlow tensor properties with Syft properties
         self._hook_properties(tensor_type)
 
-        # Overload auto overloaded with Torch methods
+        # Overload auto overloaded with TensorFlow methods
         self._add_methods_from_native_tensor(tensor_type, syft_type)
 
         self._hook_native_methods(tensor_type)
@@ -113,7 +113,7 @@ class TensorFlowHook(FrameworkHook):
             for func in dir(tensorflow_module):
 
                 # Some functions we want to ignore (not override). Such functions have been hard
-                # coded into the torch_attribute exclude (see TorchAttribute class)
+                # coded into the tensorflow_attribute exclude (see TensorFlowAttribute class)
                 if func in syft.tensorflow.exclude:
                     continue
 
@@ -144,9 +144,9 @@ class TensorFlowHook(FrameworkHook):
         TODO: auto-registration is disabled at the moment, this might be bad.
          Args:
             tensor_type: The type of tensor being hooked (in this refactor this
-                is only ever torch.Tensor, but in previous versions of PySyft
+                is only ever tf.Tensor, but in previous versions of PySyft
                 this iterated over all tensor types.
-            torch_tensor: An optional boolean parameter (default False) to
+            is_tensor: An optional boolean parameter (default False) to
                 specify whether to skip running the native initialization
                 logic. TODO: this flag might never get used.
         """
@@ -169,83 +169,14 @@ class TensorFlowHook(FrameworkHook):
 
         tensor_type.__init__ = new___init__
 
-    def _hook_properties(hook_self, tensor_type: type):
-        """Overloads tensor_type properties.
-
-        This method gets called only on torch.Tensor. If you're not sure how
-        properties work, read:
-        https://www.programiz.com/python-programming/property
-        Args:
-            tensor_type: The tensor type which is having properties
-                added to it, typically just torch.Tensor.
-        """
-
-        @property
-        def location(self):
-            return self.child.location
-
-        tensor_type.location = location
-
-        @property
-        def id_at_location(self):
-            return self.child.id_at_location
-
-        tensor_type.id_at_location = id_at_location
-
-        @property
-        def id(self):
-            if not hasattr(self, "_syft_id"):
-                self._syft_id = syft.ID_PROVIDER.pop()
-            return self._syft_id
-
-        @id.setter
-        def id(self, new_syft_id):
-            self._syft_id = new_syft_id
-            return self
-
-        tensor_type.id = id
-
-        @property
-        def owner(self):
-            if not hasattr(self, "_owner"):
-                self._owner = hook_self.local_worker
-            return self._owner
-
-        @owner.setter
-        def owner(self, new_owner):
-            self._owner = new_owner
-            return self
-
-        tensor_type.owner = owner
-
-        @property
-        def is_wrapper(self):
-            if not hasattr(self, "_is_wrapper"):
-                self._is_wrapper = False
-            return self._is_wrapper
-
-        @is_wrapper.setter
-        def is_wrapper(self, it_is_a_wrapper):
-            self._is_wrapper = it_is_a_wrapper
-            return self
-
-        tensor_type.is_wrapper = is_wrapper
-
-        tensor_type.native_shape = tensor_type.shape
-
-        def dim(self):
-            return len(self.shape)
-
-        tensor_type.dim = dim
-
     @staticmethod
     def _add_methods_from_native_tensor(tensor_type: type, syft_type: type):
-        """Adds methods from the TorchTensor class to the native torch tensor.
-         The class TorchTensor is a proxy to avoid extending directly the torch
+        """Adds methods from the TensorFlowTensor class to the native TensorFlow tensor.
+         The class TensorFlowTensor is a proxy to avoid extending directly the TensorFlow
         tensor class.
          Args:
             tensor_type: The tensor type to which we are adding methods
-                from TorchTensor class.
+                from TensorFlowTensor class.
         """
         exclude = [
             "__class__",

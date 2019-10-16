@@ -14,7 +14,7 @@ class TensorFlowAttributes(FrameworkAttributes):
     """Adds tensorflow module related custom attributes.
 
     TensorFlowAttributes is a special class where all custom attributes related
-    to the torch module can be added. Any global parameter, configuration,
+    to the tensorflow module can be added. Any global parameter, configuration,
     or reference relating to TensorFlow should be stored here instead of
     attaching it directly to some other part of the global namespace.
 
@@ -75,7 +75,7 @@ class TensorFlowAttributes(FrameworkAttributes):
         # - functions that could use pointers or syft tensors
         self.exclude = []
 
-        # SECTION: List all torch tensor methods we want to overload
+        # SECTION: List all TensorFlow tensor methods we want to overload
         self.tensor_types = [tensorflow.Tensor, tensorflow.Variable]
 
         # SECTION: Build the guard, that define which
@@ -94,11 +94,11 @@ class TensorFlowAttributes(FrameworkAttributes):
         for key in keys:
             self.guard[f"syft.{key}"] = self.guard[key]
 
-        # Concatenate torch functions and torch methods
+        # Concatenate TensorFlow functions and TensorFlow methods
         self.allowed_commands = self._tensorflow_modules_functions
 
-        # The equivalent concatenation of native torch function
-        # names and native torch method names
+        # The equivalent concatenation of native TensorFlow function
+        # names and native TensorFlow method names
         self.native_commands = {
             command_name: self.get_native_framework_name(command_name)
             for command_name in self.allowed_commands

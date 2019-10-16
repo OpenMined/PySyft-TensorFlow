@@ -23,7 +23,7 @@ class TensorFlowTensor(AbstractTensor):
 
     Note: all methods from AbstractTensor will also be included because this
     tensor extends AbstractTensor. So, if you're looking for a method on
-    the native torch tensor API but it's not listed here, you might try
+    the native TensorFlow tensor API but it's not listed here, you might try
     checking AbstractTensor.
     """
 
@@ -111,7 +111,7 @@ class TensorFlowTensor(AbstractTensor):
             inplace: if true,
               return the same object instance, else a new wrapper
             # local_autograd: Use autograd system on the local machine instead
-              of PyTorch's autograd on the workers.
+              of TensorFlow's autograd on the workers.
             # preinitialize_grad: Initialize gradient for AutogradTensors
               to a tensor
             no_wrap: If True, wrap() is called on the created pointer
@@ -213,11 +213,11 @@ class TensorFlowTensor(AbstractTensor):
         garbage_collect_data: bool = True,
         shape=None,
     ) -> PointerTensor:
-        """Creates a pointer to the "self" torch.Tensor object.
+        """Creates a pointer to the "self" tf.Tensor object.
 
         Returns:
             A PointerTensor pointer to self. Note that this
-            object will likely be wrapped by a torch.Tensor wrapper.
+            object will likely be wrapped by a tf.Tensor wrapper.
         """
         if id_at_location is None:
             id_at_location = self.id
@@ -287,13 +287,13 @@ class TensorFlowTensor(AbstractTensor):
         Operates as a router for functions. A function call always starts
         by being handled here and 3 scenarii must be considered:
 
-        Real Torch tensor:
+        Real TensorFlow tensor:
             The arguments of the function are real tensors so we should
-            run the native torch command
+            run the native TensorFlow command
 
-        Torch wrapper:
+        TensorFlow wrapper:
             The arguments are just wrappers at the top of a chain
-            (ex: wrapper>LoggingTensor>Torch tensor), so just forward
+            (ex: wrapper>LoggingTensor>TensorFlow tensor), so just forward
             the instruction to the next layer type in the chain (in
             the example above to LoggingTensor.handle_func_command),
             get the response and replace a wrapper on top of all tensors
@@ -315,7 +315,7 @@ class TensorFlowTensor(AbstractTensor):
 
         try:  # will work if tensors are wrappers
 
-            # Replace all torch tensor with their child attribute
+            # Replace all TensorFlow tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
                 cmd, args, kwargs, return_args_type=True
