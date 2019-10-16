@@ -20,7 +20,10 @@ from syft_tensorflow.tensor import KerasModel
 
 class TensorFlowHook(FrameworkHook):
     def __init__(
-        self, tensorflow, local_worker: BaseWorker = None, is_client: bool = True
+        self,
+        tensorflow,
+        local_worker: BaseWorker = None,
+        is_client: bool = True
     ):
 
         self.tensorflow = tensorflow
@@ -62,11 +65,11 @@ class TensorFlowHook(FrameworkHook):
             tf.Variable: self._which_methods_should_we_auto_overload(
                 tf.Variable
             ),
-            
+
             tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
                 tf.keras.layers.Layer
             ),
-            
+
             tf.keras.models.Model: self._which_methods_should_we_auto_overload(
                 tf.keras.models.Model
             ),
