@@ -55,11 +55,18 @@ class TensorFlowHook(FrameworkHook):
             self.local_worker.hook = self
 
         self.to_auto_overload = {
-            Tensor: self._which_methods_should_we_auto_overload(Tensor),
-            tf.Variable: self._which_methods_should_we_auto_overload(tf.Variable),
+            Tensor: self._which_methods_should_we_auto_overload(
+                Tensor
+            ),
+
+            tf.Variable: self._which_methods_should_we_auto_overload(
+                tf.Variable
+            ),
+            
             tf.keras.layers.Layer: self._which_methods_should_we_auto_overload(
                 tf.keras.layers.Layer
             ),
+            
             tf.keras.models.Model: self._which_methods_should_we_auto_overload(
                 tf.keras.models.Model
             ),
