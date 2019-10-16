@@ -26,7 +26,7 @@ type_rule = {
     TensorFlowTensor: one,
     EagerTensor: one,
     ResourceVariable: one,
-    np.ndarray: one,
+    np.ndarray: lambda x: 0,
 }
 
 def default_forward(i):
@@ -40,7 +40,6 @@ forward_func = {
     tf.Variable: default_forward,
     ResourceVariable: default_forward,
     EagerTensor: default_forward,
-    np.ndarray: default_forward,
 }
 backward_func = {
     tf.Tensor: lambda i: i.wrap(),
@@ -48,7 +47,6 @@ backward_func = {
     ResourceVariable: lambda i: i.wrap(),
     TensorFlowTensor: lambda i: i.wrap(),
     EagerTensor: lambda i: i.wrap(),
-    np.ndarray: lambda i: i.wrap(),
 }
 ambiguous_methods = {"__getitem__", "__setitem__"}
 
