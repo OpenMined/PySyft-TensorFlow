@@ -4,6 +4,7 @@ See syft/generic/frameworks/hook/hook_args.py for the core implementation.
 """
 
 import tensorflow as tf
+import numpy as np
 
 from tensorflow.python.framework.ops import EagerTensor
 from syft.exceptions import PureFrameworkTensorFoundError
@@ -25,6 +26,7 @@ type_rule = {
     TensorFlowTensor: one,
     EagerTensor: one,
     ResourceVariable: one,
+    np.ndarray: lambda x: 0,
 }
 
 def default_forward(i):
