@@ -17,7 +17,7 @@ from syft.generic.frameworks.hook.hook_args import (
     one,
 )
 
-from syft_tensorflow.tensor import TensorFlowTensor
+from syft_tensorflow.syft_types import TensorFlowTensor
 
 
 type_rule = {

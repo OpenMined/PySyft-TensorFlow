@@ -8,7 +8,7 @@ from syft.generic.object import AbstractObject
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.base import BaseWorker
 
-from syft_tensorflow.tensor import KerasObject
+from syft_tensorflow.syft_types import KerasObject
 
 from syft.exceptions import PureFrameworkTensorFoundError
 

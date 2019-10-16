@@ -12,10 +12,10 @@ from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.object import initialize_object
 
 from syft_tensorflow.attributes import TensorFlowAttributes
-from syft_tensorflow.tensor import TensorFlowTensor
-from syft_tensorflow.tensor import TensorFlowVariable
-from syft_tensorflow.tensor import KerasLayer
-from syft_tensorflow.tensor import KerasModel
+from syft_tensorflow.syft_types import TensorFlowTensor
+from syft_tensorflow.syft_types import TensorFlowVariable
+from syft_tensorflow.syft_types import KerasLayer
+from syft_tensorflow.syft_types import KerasModel
 
 
 class TensorFlowHook(FrameworkHook):
