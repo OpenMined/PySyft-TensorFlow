@@ -30,3 +30,9 @@ def test_constant_repr(remote):
   x = tf.constant([1, 2, 3]).send(remote)
   repr = str(x)
   assert repr.startswith('(Wrapper)>[PointerTensor | me')
+
+def test_gotten_repr(remote):
+  x = tf.constant([1, 2, 3]).send(remote).get()
+  repr = str(x)
+
+  assert repr == "tf.Tensor([1 2 3], shape=(3,), dtype=int32)"

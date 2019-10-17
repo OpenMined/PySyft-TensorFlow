@@ -296,6 +296,9 @@ class TensorFlowHook(FrameworkHook):
       dummy = tf.constant(0)
       eager_type = type(dummy)
 
+      eager_type.native___str__ = eager_type.__str__
+      eager_type.native___repr__ = eager_type.__repr__
+
       eager_type.__repr__ = TensorFlowTensor.__repr__
       eager_type.__str__ = TensorFlowTensor.__str__
 
