@@ -52,7 +52,6 @@ backward_func = {
     tf.Tensor: lambda i: i.wrap(),
     tf.Variable: lambda i: i.wrap(),
     ResourceVariable: lambda i: i.wrap(),
-    TensorFlowTensor: lambda i: i.wrap(),
     EagerTensor: lambda i: i.wrap(),
     tf.keras.layers.Layer: lambda i: i.wrap(),
     tf.keras.models.Model: lambda i: i.wrap(),
