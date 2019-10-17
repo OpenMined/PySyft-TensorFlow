@@ -1,3 +1,4 @@
+import re
 from types import ModuleType
 import typing
 
@@ -106,11 +107,17 @@ class TensorFlowAttributes(FrameworkAttributes):
 
         self.command_guard = self._command_guard
 
-        self.exclude = []
-
+        self.inplace_re_pattern = re.compile("(assign)_?")
         self.inplace_methods = {}
 
 
-    def is_inplace_method(self, method):
-        # I've not yet encountered any inplace methods in TF
-        return False
+    def is_inplace_method(self, method_name):
+        try:
+            return self.inplace_methods[method_name]
+        except KeyError:
+            match = re.match(self.inplace_re_pattern, method_name)
+            if match is None:
+                return False
+            is_inplace = match.group(1)
+            self.inplace_methods[method_name] = is_inplace
+            return is_inplace
