@@ -10,8 +10,6 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
-from syft_tensorflow.serde.serde_utils import history_numpy_to_float
-
 
 def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
     """
@@ -266,9 +264,7 @@ def _simplify_keras_history_callback(
     """
 
     params = history_cb.params
-    # serde can't serialize numpy values. These values need
-    # to be converted to floats first
-    history = history_numpy_to_float(history_cb.history)
+    history = history_cb.history
 
     params_ser = syft.serde.serde._simplify(params)
     history_ser = syft.serde.serde._simplify(history)
