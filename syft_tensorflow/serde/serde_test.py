@@ -34,3 +34,10 @@ def test_serde_model():
     m_new = syft.serde.deserialize(ser)
 
     assert tf.math.equal(y, m_new(x)).numpy().all()
+
+
+def test_serde_dtype():
+    d = tf.float32
+    ser = syft.serde.serialize(d)
+    x = syft.serde.deserialize(ser)
+    assert d == x

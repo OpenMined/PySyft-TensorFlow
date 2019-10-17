@@ -28,7 +28,7 @@ def _simplify_tf_tensor(tensor: tf.Tensor) -> bin:
 
     tensor_ser = tf.io.serialize_tensor(tensor)
 
-    dtype_ser = tensor.dtype.as_datatype_enum
+    dtype_ser = syft.serde._simplify(tensor.dtype)
 
     chain = None
     if hasattr(tensor, "child"):
@@ -54,7 +54,7 @@ def _detail_tf_tensor(worker, tensor_tuple) -> tf.Tensor:
 
     tensor_id, tensor_bin, tensor_dtype_enum, chain = tensor_tuple
 
-    tensor_dtype = tf.dtypes.DType(tensor_dtype_enum)
+    tensor_dtype = syft.serde._detail(worker, tensor_dtype_enum)
     tensor = tf.io.parse_tensor(tensor_bin, tensor_dtype)
 
     initialize_tensor(
@@ -91,7 +91,7 @@ def _simplify_tf_variable(tensor: tf.Variable) -> bin:
 
     tensor_ser = tf.io.serialize_tensor(tensor)
 
-    dtype_ser = tensor.dtype.as_datatype_enum
+    dtype_ser = syft.serde._simplify(tensor.dtype)
 
     chain = None
     if hasattr(tensor, "child"):
@@ -117,7 +117,7 @@ def _detail_tf_variable(worker, tensor_tuple) -> tf.Tensor:
 
     tensor_id, tensor_bin, tensor_dtype_enum, chain = tensor_tuple
 
-    tensor_dtype = tf.dtypes.DType(tensor_dtype_enum)
+    tensor_dtype = syft.serde._detail(worker, tensor_dtype_enum)
     tensor = tf.io.parse_tensor(tensor_bin, tensor_dtype)
     tensor = tf.Variable(tensor)
 
@@ -313,6 +313,19 @@ def _detail_keras_history_callback(
     return history_cb
 
 
+def _simplify_tf_dtype(dtype: tf.dtypes.DType) -> bin:
+
+    return dtype.as_datatype_enum, None
+
+
+def _detail_tf_dtype(worker, dtype_tuple):
+    dtype_enum, _ = dtype_tuple
+
+    dtype = tf.dtypes.DType(dtype_enum)
+
+    return dtype
+
+
 def _simplify_tf_tensorshape(tensorshape: tf.TensorShape) -> bin:
     """
     This function converts a TF tensor shape into a serialized list.
@@ -376,7 +389,8 @@ MAP_TF_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         tf.keras.layers.Layer: (_simplify_tf_keras_layers, _detail_tf_keras_layers),
         tf.keras.models.Model: (_simplify_keras_model, _detail_keras_model),
         ResourceVariable: (_simplify_tf_variable, _detail_tf_variable),
-        tf.keras.callbacks.History: (_simplify_keras_history_callback,  
-                                     _detail_keras_history_callback)
+        tf.keras.callbacks.History: (_simplify_keras_history_callback,
+                                     _detail_keras_history_callback),
+        tf.dtypes.DType: (_simplify_tf_dtype, _detail_tf_dtype),
     }
 )
