@@ -12,7 +12,7 @@ def test_keras_activations_fn():
     expected = tf.keras.activations.relu(x_to_give)
 
     x_ptr = x_to_give.send(bob)
-    
+
     relu_ptr = tf.keras.activations.relu(x_ptr)
     actual = relu_ptr.get()
 
