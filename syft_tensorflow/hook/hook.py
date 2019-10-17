@@ -4,6 +4,7 @@ import types
 
 import tensorflow as tf
 from tensorflow.python.framework.ops import Tensor
+from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 import syft
 from syft.workers.base import BaseWorker
@@ -73,18 +74,24 @@ class TensorFlowHook(FrameworkHook):
             tf.keras.models.Model: self._which_methods_should_we_auto_overload(
                 tf.keras.models.Model
             ),
+
+          ResourceVariable: self._which_methods_should_we_auto_overload(
+              ResourceVariable
+          ),
         }
 
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(Tensor, TensorFlowTensor)
-        self._hook_native_tensor(tf.Variable, TensorFlowVariable)
+        self._hook_variable(TensorFlowVariable)
 
         self._hook_keras_layers(tf.keras.layers.Layer, KerasLayer)
         self._hook_keras_model(tf.keras.models.Model, KerasModel)
 
         self._hook_pointer_tensor_methods(Tensor)
         self._hook_pointer_tensor_methods(tf.Variable)
+        self._hook_pointer_tensor_methods(ResourceVariable)
+
         self._hook_object_pointer_methods(tf.keras.layers.Layer)
         self._hook_object_pointer_methods(tf.keras.models.Model)
 
@@ -205,6 +212,52 @@ class TensorFlowHook(FrameworkHook):
         self._transfer_methods_to_framework_class(model_cls, from_cls, exclude)
 
         self._hook_keras_methods(model_cls)
+
+    def _hook_variable(self, syft_type: type):
+        """Adds PySyft Tensor Functionality to the given native tensor type.
+         Overloads the given native Torch tensor to add PySyft Tensor
+        Functionality. Overloading involves modifying the tensor type with
+        PySyft's added functionality. You may read about what kind of
+        modifications are made in the methods that this method calls.
+         Args:
+            tensor_type: The type of tensor being hooked (in this refactor
+                this is only ever torch.Tensor, but in previous versions of
+                PySyft this iterated over all tensor types.
+            syft_type: The abstract type whose methods should all be added to
+                the tensor_type class. In practice this is always TorchTensor.
+                Read more about it there.
+        """
+        # Reinitialize init method of Torch tensor with Syft init
+        self._add_registration_to___init__(tf.Variable)
+
+        # Overload Torch tensor properties with Syft properties
+        self._hook_properties(tf.Variable)
+
+        # Overload auto overloaded with Torch methods
+        exclude = [
+            "__class__",
+            "__delattr__",
+            "__dict__",
+            "__dir__",
+            "__doc__",
+            "__format__",
+            "__getattribute__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__weakref__",
+            "__module__",
+            "__ne__",
+            "__new__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__setattr__",
+            "__sizeof__",
+            "__subclasshook__",
+        ]
+        self._transfer_methods_to_framework_class(ResourceVariable, syft_type, exclude)
+        self._hook_properties(ResourceVariable)
+        self._hook_native_methods(ResourceVariable)
 
     def _hook_tensorflow_module(self):
         tensorflow_modules = syft.tensorflow.tensorflow_modules
