@@ -138,19 +138,19 @@ def _detail_tf_variable(worker, tensor_tuple) -> tf.Tensor:
     return tensor
 
 
-def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
+def _simplify_tf_keras_layers(layer: tf.keras.layers.Layer) -> bin:
     """
     This function converts a keras layer into a serialized keras layer using
-    tf.io. We do this because it's native to TF, and they've optimized it.
+    keras serialize.
 
     Args:
-      tensor (torch.Tensor): an input tensor to be serialized
+      layer (tf.keras.layers.Layer): an input tensor to be serialized
 
     Returns:
-      tuple: serialized tuple of TensorFlow tensor. The first value is the
-      id of the tensor and the second is the binary for the TensorFlow
-      object. The third is the tensor dtype and the fourth is the chain
-      of abstractions.
+      tuple: serialized tuple of Layer class. The first value is the
+      id of the layer and the second is the layer configuration
+      object. The third is the layer weights and the fourth is the
+      batch input shape.
     """
 
     layer_ser = tf.keras.layers.serialize(layer)
@@ -164,29 +164,24 @@ def _simplify_tf_keras_layers(layer: tf.Tensor) -> bin:
         layer_ser["config"]["batch_input_shape"]
     )
 
-    chain = None
-    if hasattr(layer, "child"):
-        chain = syft.serde._simplify(layer.child)
-
-    return layer.id, layer_dict_ser, weights_ser, batch_input_shape_ser, chain
+    return layer.id, layer_dict_ser, weights_ser, batch_input_shape_ser
 
 
 def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
     """
-    This function converts a serialized tf tensor into a local TF tensor
-    using tf.io.
+    This function converts a serialized keras layer into a local keras layer
 
     Args:
-        tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-            the first value is the ID, the second vlaue is the binary for the
-            TensorFlow object, the third value is the tensor_dtype_enum, and
-            the fourth value is the chain of tensor abstractions
+        layer_tuple (bin): serialized obj of TF layer. It's a tuple where
+            the first value is the ID, the second value is the binary for the
+            layer object, the third value is the layer weights, and
+            the fourth value is the batch input shape.
 
     Returns:
         tf.Tensor: a deserialized TF tensor
     """
 
-    layer_id, layer_bin, weights_bin, batch_input_shape_bin, chain = layer_tuple
+    layer_id, layer_bin, weights_bin, batch_input_shape_bin = layer_tuple
 
     layer_dict = syft.serde.serde._detail(worker, layer_bin)
 
@@ -210,15 +205,20 @@ def _detail_tf_keras_layers(worker, layer_tuple) -> tf.Tensor:
         init_kwargs={},
     )
 
-    if chain is not None:
-        chain = syft.serde._detail(worker, chain)
-        layer.child = chain
-        layer.is_wrapper = True
-
     return layer
 
 
 def _simplify_keras_model(model: tf.keras.Model):
+    """
+    This function converts a model into a serialized saved_model.
+
+    Args:
+      model (tf.keras.Model: Keras model
+
+    Returns:
+      tuple: serialized tuple of Keras model. The first value is
+      the binary of the model. The second is the model id.
+    """
     bio = io.BytesIO()
 
     with h5py.File(bio) as file:
@@ -230,6 +230,18 @@ def _simplify_keras_model(model: tf.keras.Model):
 
 
 def _detail_keras_model(worker, model_tuple):
+    """
+    This function converts a serialized model into a local
+    model.
+
+    Args:
+        modeltuple (bin): serialized obj of Keras model.
+        It's a tuple where the first value is the binary of the model. 
+        The second is the model id.
+
+    Returns:
+        tf.keras.models.Model: a deserialized Keras model
+    """
     model_ser, model_id = model_tuple
     bio = io.BytesIO(model_ser)
     with h5py.File(bio) as file:

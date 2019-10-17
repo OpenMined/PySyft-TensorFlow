@@ -117,8 +117,8 @@ class TensorFlowHook(FrameworkHook):
         # Overload TensorFlow tensor properties with Syft properties
         self._hook_tensor_properties(tensor_type)
 
-        # Overload auto overloaded with Torch methods
-        exclude = [  # Overload auto overloaded with Torch methods
+        # Overload auto overloaded with TensorFlow methods
+        exclude = [  # Overload auto overloaded with TensorFlow methods
             "__class__",
             "__delattr__",
             "__dir__",
@@ -240,15 +240,14 @@ class TensorFlowHook(FrameworkHook):
     ):
         """Adds several attributes to the tensor.
          Overloads tensor_type.__init__ to add several attributes to the tensor
-        as well as (optionally) registering the tensor automatically.
-        TODO: auto-registration is disabled at the moment, this might be bad.
+        as well as registering the tensor automatically.
          Args:
             tensor_type: The type of tensor being hooked (in this refactor this
                 is only ever tf.Tensor, but in previous versions of PySyft
                 this iterated over all tensor types.
             is_tensor: An optional boolean parameter (default False) to
                 specify whether to skip running the native initialization
-                logic. TODO: this flag might never get used.
+                logic.
         """
 
         def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
