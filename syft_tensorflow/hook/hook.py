@@ -214,18 +214,17 @@ class TensorFlowHook(FrameworkHook):
         self._hook_keras_methods(model_cls)
 
     def _hook_variable(self, syft_type: type):
-        """Adds PySyft Tensor Functionality to the given native tensor type.
-         Overloads the given native Torch tensor to add PySyft Tensor
-        Functionality. Overloading involves modifying the tensor type with
-        PySyft's added functionality. You may read about what kind of
-        modifications are made in the methods that this method calls.
-         Args:
-            tensor_type: The type of tensor being hooked (in this refactor
-                this is only ever torch.Tensor, but in previous versions of
-                PySyft this iterated over all tensor types.
+        """Adds PySyft Tensor functionality to tf.Variable.
+
+        In practice, the user is generally working with subclasses of
+        tf.Variable, e.g. ResourceVariable, so we hook methods for those and
+        only override the tf.Variable constructor to provide syft registration.
+        You may read about what kind of modifications are made in the methods
+        that this method calls.
+
+        Args:
             syft_type: The abstract type whose methods should all be added to
-                the tensor_type class. In practice this is always TorchTensor.
-                Read more about it there.
+                the ResourceVariable class.
         """
         # Reinitialize init method of Torch tensor with Syft init
         self._add_registration_to___init__(tf.Variable)
