@@ -49,10 +49,10 @@ forward_func = {
 
 }
 backward_func = {
-    tf.Tensor: lambda i: i.wrap(),
-    tf.Variable: lambda i: i.wrap(),
-    ResourceVariable: lambda i: i.wrap(),
-    EagerTensor: lambda i: i.wrap(),
+    tf.Tensor: lambda i: i.wrap(type=tf.constant, value=[]),
+    tf.Variable: lambda i: i.wrap(type=tf.Variable, initial_value=[]),
+    ResourceVariable: lambda i: i.wrap(type=tf.Variable, initial_value=[]),
+    EagerTensor: lambda i: i.wrap(type=tf.constant, value=[]),
     tf.keras.layers.Layer: lambda i: i.wrap(),
     tf.keras.models.Model: lambda i: i.wrap(),
 }
