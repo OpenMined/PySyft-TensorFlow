@@ -1,3 +1,7 @@
+# DEPRECATION NOTICE
+
+Warning, this repository will soon be deprecated in favor of [PySyft](https://github.com/OpenMined/PySyft).
+
 # PySyft-TensorFlow
 TensorFlow bindings for [PySyft](https://github.com/openmined/pysyft).
 
